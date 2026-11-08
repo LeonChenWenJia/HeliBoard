@@ -28,6 +28,7 @@ import helium314.keyboard.keyboard.internal.GestureStrokeRecognitionParams;
 import helium314.keyboard.keyboard.internal.PointerTrackerQueue;
 import helium314.keyboard.keyboard.internal.TimerProxy;
 import helium314.keyboard.keyboard.internal.TypingTimeRecorder;
+import helium314.keyboard.keyboard.internal.PopupKeySpec;
 import helium314.keyboard.keyboard.internal.keyboard_parser.floris.KeyCode;
 import helium314.keyboard.latin.R;
 import helium314.keyboard.latin.common.Constants;
@@ -140,6 +141,10 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
     // Last pointer position.
     private int mLastX;
     private int mLastY;
+    // flick typing: key and position of the initial touch
+    private Key mFlickKey;
+    private int mFlickDownX;
+    private int mFlickDownY;
     private int mStartX;
     private int mStartY;
     private long mStartTime;
@@ -733,6 +738,9 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
                 key = onDownKey(x, y + yOffset, eventTime);
             }
 
+            mFlickKey = key;
+            mFlickDownX = x;
+            mFlickDownY = y;
             startRepeatKey(key);
             startLongPressTimer(key);
             setPressedKeyGraphics(key, eventTime);
@@ -1114,6 +1122,12 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
             }
         }
 
+        final Key flickKey = mFlickKey;
+        mFlickKey = null;
+        if (!sInGesture && flickKey != null && handleFlick(flickKey, currentKey, x, y, eventTime)) {
+            return;
+        }
+
         if (sInGesture) {
             if (currentKey != null) {
                 callListenerOnRelease(currentKey, currentKey.getCode(), true);
@@ -1137,6 +1151,34 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
         if (isInSlidingKeyInput) {
             callListenerOnFinishSlidingInput();
         }
+    }
+
+    /** Commits a popup key if the touch was a short flick starting on [flickKey]. Returns true if handled. */
+    private boolean handleFlick(final Key flickKey, final Key currentKey, final int x, final int y, final long eventTime) {
+        if (!Settings.getValues().mFlickTyping || flickKey.isModifier() || isSwiper(flickKey.getCode()))
+            return false;
+        final PopupKeySpec[] popupKeys = flickKey.getPopupKeys();
+        if (popupKeys == null)
+            return false;
+        final int dX = x - mFlickDownX;
+        final int dY = y - mFlickDownY;
+        final int threshold = (int) (0.4f * Math.min(mKeyboard.mMostCommonKeyWidth, mKeyboard.mMostCommonKeyHeight));
+        if (Math.max(abs(dX), abs(dY)) < threshold)
+            return false;
+        // popup key order -> up, left, right, down
+        final int index = abs(dX) > abs(dY) ? (dX < 0 ? 1 : 2) : (dY < 0 ? 0 : 3);
+        if (index >= popupKeys.length)
+            return false;
+        final PopupKeySpec spec = popupKeys[index];
+        sTypingTimeRecorder.onCodeInput(spec.mCode, eventTime);
+        if (spec.mCode == KeyCode.MULTIPLE_CODE_POINTS) {
+            sListener.onTextInput(spec.mOutputText);
+        } else if (spec.mCode != KeyCode.NOT_SPECIFIED) {
+            sListener.onCodeInput(spec.mCode, Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false);
+        }
+        if (currentKey != null) // finger never left the key, so it still needs to be released
+            callListenerOnRelease(currentKey, currentKey.getCode(), false);
+        return true;
     }
 
     @Override

@@ -77,6 +77,7 @@ public final class Settings implements SharedPreferences.OnSharedPreferenceChang
     public static final String PREF_INLINE_EMOJI_SEARCH = "inline_emoji_search";
     public static final String PREF_SHOW_EMOJI_DESCRIPTIONS = "show_emoji_descriptions";
     public static final String PREF_POPUP_ON = "popup_on";
+    public static final String PREF_FLICK_TYPING = "flick_typing";
     public static final String PREF_AUTO_CORRECTION = "auto_correction";
     public static final String PREF_MORE_AUTO_CORRECTION = "more_auto_correction";
     public static final String PREF_AUTO_CORRECT_CONFIDENCE = "auto_correct_confidence";

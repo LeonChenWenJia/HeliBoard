@@ -51,6 +51,7 @@ fun PreferencesScreen(
         Settings.PREF_SHOW_POPUP_HINTS,
         Settings.PREF_SHOW_TLD_POPUP_KEYS,
         Settings.PREF_POPUP_ON,
+        Settings.PREF_FLICK_TYPING,
         if (AudioAndHapticFeedbackManager.getInstance().hasVibrator())
             Settings.PREF_VIBRATE_ON else null,
         if (prefs.getBoolean(Settings.PREF_VIBRATE_ON, Defaults.PREF_VIBRATE_ON))
@@ -115,6 +116,9 @@ fun createPreferencesSettings(context: Context) = listOf(
     },
     Setting(context, Settings.PREF_POPUP_ON, R.string.popup_on_keypress) {
         SwitchPreference(it, Defaults.PREF_POPUP_ON) { KeyboardSwitcher.getInstance().reloadKeyboard() }
+    },
+    Setting(context, Settings.PREF_FLICK_TYPING, R.string.flick_typing, R.string.flick_typing_summary) {
+        SwitchPreference(it, Defaults.PREF_FLICK_TYPING)
     },
     Setting(context, Settings.PREF_VIBRATE_ON, R.string.vibrate_on_keypress) {
         SwitchPreference(it, Defaults.PREF_VIBRATE_ON)

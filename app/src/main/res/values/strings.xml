@@ -34,6 +34,10 @@
     <string name="show_emoji_descriptions">Show emoji description on long press</string>
     <!-- Option to control whether or not to show a popup with a larger font on each key press. -->
     <string name="popup_on_keypress">Popup on keypress</string>
+    <!-- Option to commit popup keys by flicking a key -->
+    <string name="flick_typing">Flick typing</string>
+    <!-- Summary of flick typing -->
+    <string name="flick_typing_summary">Flick a key up, left, right or down to type its 1st, 2nd, 3rd or 4th popup key</string>
     <!-- Option whether the keyboard can be hidden by swiping down on the toolbar -->
     <string name="toolbar_swipe_down_to_hide">Hide keyboard by swipe</string>
     <!-- Description for toolbar_swipe_down_to_hide -->
