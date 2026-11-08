@@ -843,6 +843,9 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
             }
             return;
         }
+        if (mFlickKey != null && !sInGesture && tryImmediateFlick(x, y, eventTime)) {
+            return;
+        }
         onMoveEventInternal(x, y, eventTime);
     }
 
@@ -1153,29 +1156,62 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
         }
     }
 
-    /** Commits a popup key if the touch was a short flick starting on [flickKey]. Returns true if handled. */
-    private boolean handleFlick(final Key flickKey, final Key currentKey, final int x, final int y, final long eventTime) {
+    /** Returns the popup key index (0 up, 1 left, 2 right, 3 down) of a flick starting on [flickKey], or -1 if there is none. */
+    private int getFlickIndex(final Key flickKey, final int x, final int y) {
         if (!Settings.getValues().mFlickTyping || flickKey.isModifier() || isSwiper(flickKey.getCode()))
-            return false;
+            return -1;
         final PopupKeySpec[] popupKeys = flickKey.getPopupKeys();
         if (popupKeys == null)
-            return false;
+            return -1;
         final int dX = x - mFlickDownX;
         final int dY = y - mFlickDownY;
-        final int threshold = (int) (0.4f * Math.min(mKeyboard.mMostCommonKeyWidth, mKeyboard.mMostCommonKeyHeight));
+        final int threshold = (int) (Settings.getValues().mFlickThreshold
+                * Math.min(mKeyboard.mMostCommonKeyWidth, mKeyboard.mMostCommonKeyHeight));
         if (Math.max(abs(dX), abs(dY)) < threshold)
-            return false;
+            return -1;
         // popup key order -> up, left, right, down
         final int index = abs(dX) > abs(dY) ? (dX < 0 ? 1 : 2) : (dY < 0 ? 0 : 3);
-        if (index >= popupKeys.length)
-            return false;
-        final PopupKeySpec spec = popupKeys[index];
+        return index < popupKeys.length ? index : -1;
+    }
+
+    private void commitFlick(final Key flickKey, final int index, final long eventTime) {
+        final PopupKeySpec spec = flickKey.getPopupKeys()[index];
         sTypingTimeRecorder.onCodeInput(spec.mCode, eventTime);
         if (spec.mCode == KeyCode.MULTIPLE_CODE_POINTS) {
             sListener.onTextInput(spec.mOutputText);
         } else if (spec.mCode != KeyCode.NOT_SPECIFIED) {
             sListener.onCodeInput(spec.mCode, Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false);
         }
+    }
+
+    /**
+     * Types the flicked popup key as soon as the finger moved far enough, without waiting for release.
+     * Horizontal flicks are left for release while glide typing is on, because they would end glide typing.
+     */
+    private boolean tryImmediateFlick(final int x, final int y, final long eventTime) {
+        final Key flickKey = mFlickKey;
+        final int index = getFlickIndex(flickKey, x, y);
+        if (index < 0 || (index == 1 || index == 2) && sGestureEnabler.shouldHandleGesture())
+            return false;
+        mFlickKey = null;
+        sTimerProxy.cancelKeyTimersOf(this);
+        mIsDetectingGesture = false;
+        commitFlick(flickKey, index, eventTime);
+        final Key currentKey = mCurrentKey;
+        if (currentKey != null) {
+            callListenerOnRelease(currentKey, currentKey.getCode(), false);
+            setReleasedKeyGraphics(currentKey, true);
+        }
+        cancelTrackingForAction(); // ignore the rest of this touch
+        return true;
+    }
+
+    /** Handles a flick that was not already typed while moving. Returns true if handled. */
+    private boolean handleFlick(final Key flickKey, final Key currentKey, final int x, final int y, final long eventTime) {
+        final int index = getFlickIndex(flickKey, x, y);
+        if (index < 0)
+            return false;
+        commitFlick(flickKey, index, eventTime);
         if (currentKey != null) // finger never left the key, so it still needs to be released
             callListenerOnRelease(currentKey, currentKey.getCode(), false);
         return true;

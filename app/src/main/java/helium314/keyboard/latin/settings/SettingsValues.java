@@ -65,6 +65,7 @@ public class SettingsValues {
     public final boolean mShowEmojiDescriptions;
     public final boolean mKeyPreviewPopupOn;
     public final boolean mFlickTyping;
+    public final float mFlickThreshold;
     public final boolean mShowsVoiceInputKey;
     public final boolean mLanguageSwitchKeyToOtherImes;
     public final boolean mLanguageSwitchKeyToOtherSubtypes;
@@ -200,6 +201,7 @@ public class SettingsValues {
         mShowEmojiDescriptions = prefs.getBoolean(Settings.PREF_SHOW_EMOJI_DESCRIPTIONS, Defaults.PREF_SHOW_EMOJI_DESCRIPTIONS);
         mKeyPreviewPopupOn = prefs.getBoolean(Settings.PREF_POPUP_ON, Defaults.PREF_POPUP_ON);
         mFlickTyping = prefs.getBoolean(Settings.PREF_FLICK_TYPING, Defaults.PREF_FLICK_TYPING);
+        mFlickThreshold = prefs.getFloat(Settings.PREF_FLICK_THRESHOLD, Defaults.PREF_FLICK_THRESHOLD);
         mSlidingKeyInputPreviewEnabled = prefs.getBoolean(
                 DebugSettings.PREF_SLIDING_KEY_INPUT_PREVIEW, Defaults.PREF_SLIDING_KEY_INPUT_PREVIEW);
         mShowsVoiceInputKey = mInputAttributes.mShouldShowVoiceInputKey;

@@ -52,6 +52,8 @@ fun PreferencesScreen(
         Settings.PREF_SHOW_TLD_POPUP_KEYS,
         Settings.PREF_POPUP_ON,
         Settings.PREF_FLICK_TYPING,
+        if (prefs.getBoolean(Settings.PREF_FLICK_TYPING, Defaults.PREF_FLICK_TYPING))
+            Settings.PREF_FLICK_THRESHOLD else null,
         if (AudioAndHapticFeedbackManager.getInstance().hasVibrator())
             Settings.PREF_VIBRATE_ON else null,
         if (prefs.getBoolean(Settings.PREF_VIBRATE_ON, Defaults.PREF_VIBRATE_ON))
@@ -119,6 +121,15 @@ fun createPreferencesSettings(context: Context) = listOf(
     },
     Setting(context, Settings.PREF_FLICK_TYPING, R.string.flick_typing, R.string.flick_typing_summary) {
         SwitchPreference(it, Defaults.PREF_FLICK_TYPING)
+    },
+    Setting(context, Settings.PREF_FLICK_THRESHOLD, R.string.flick_threshold, R.string.flick_threshold_summary) { setting ->
+        SliderPreference(
+            name = setting.title,
+            key = setting.key,
+            default = Defaults.PREF_FLICK_THRESHOLD,
+            description = { (it * 100).toInt().toString() + "%" },
+            range = 0.1f..0.6f,
+        )
     },
     Setting(context, Settings.PREF_VIBRATE_ON, R.string.vibrate_on_keypress) {
         SwitchPreference(it, Defaults.PREF_VIBRATE_ON)

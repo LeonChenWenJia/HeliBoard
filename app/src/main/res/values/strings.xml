@@ -37,6 +37,8 @@
     <!-- Option to commit popup keys by flicking a key -->
     <string name="flick_typing">Flick typing</string>
     <!-- Summary of flick typing -->
+    <string name="flick_threshold">Flick distance</string>
+    <string name="flick_threshold_summary">How far to move, as a percentage of key size, before the flick types. Lower is faster but may trigger accidentally</string>
     <string name="flick_typing_summary">Flick a key up, left, right or down to type its 1st, 2nd, 3rd or 4th popup key</string>
     <!-- Option whether the keyboard can be hidden by swiping down on the toolbar -->
     <string name="toolbar_swipe_down_to_hide">Hide keyboard by swipe</string>
