@@ -39,6 +39,8 @@
     <!-- Summary of flick typing -->
     <string name="flick_threshold">Flick distance</string>
     <string name="flick_threshold_summary">How far to move, as a percentage of key size, before the flick types. Lower is faster but may trigger accidentally</string>
+    <string name="flick_over_gesture">Flick instead of gesture typing</string>
+    <string name="flick_over_gesture_summary">While flick typing is on, gesture typing is turned off so flicks always work. Turn off to use both</string>
     <string name="flick_typing_summary">Flick a key up, left, right or down to type its 1st, 2nd, 3rd or 4th popup key</string>
     <!-- Option whether the keyboard can be hidden by swiping down on the toolbar -->
     <string name="toolbar_swipe_down_to_hide">Hide keyboard by swipe</string>
@@ -605,6 +607,10 @@ language, hence "No language". -->
     <string name="prefs_keypress_sound_volume_settings">Keypress sound volume</string>
     <!-- Title of the setting for key long press delay -->
     <string name="prefs_key_longpress_timeout_settings">Key long press delay</string>
+    <!-- Title of the setting for enabling key long press -->
+    <string name="prefs_key_longpress_enabled">Long press</string>
+    <!-- Summary of the setting for enabling key long press -->
+    <string name="prefs_key_longpress_enabled_summary">When off, holding a key never opens its popup or triggers long press actions. Flick typing is not affected.</string>
     <!-- Title of the setting for overriding Android SDK level for showing emojis -->
     <string name="prefs_key_emoji_max_sdk">Override Emoji version</string>
     <!-- Title of the setting for enabling Emoji palette triggered by the Alt key on physical keyboards -->
@@ -942,6 +948,8 @@ New dictionary:
     <string name="space_swipe_hide_keyboard_entry">Hide keyboard</string>
     <!-- Option to use touchpad when swiping the spacebar -->
     <string name="space_swipe_touchpad_mode_entry">Touchpad mode</string>
+    <!-- Option to extend the text selection when swiping the spacebar -->
+    <string name="space_swipe_touchpad_select_entry">Touchpad selection mode</string>
     <!-- Option to adjust spacebar-touchpad sensitivity -->
     <string name="touchpad_sensitivity">Touchpad sensitivity</string>
     <!-- Option to enable or disable automatic scrolling when the cursor reaches the keyboard edges -->
@@ -959,6 +967,11 @@ New dictionary:
     <!-- Title of the settings for adjusting the language swipe gesture distance -->
     <string name="prefs_language_swipe_distance">Switch language swipe distance</string>
     <!-- Title of the setting to customize toolbar key codes -->
+    <string name="toolbar_shortcuts">Toolbar app shortcuts</string>
+    <string name="toolbar_shortcuts_add">Add shortcut</string>
+    <string name="toolbar_shortcuts_empty">No shortcuts yet. Tap "Add shortcut", pick an app, then choose one of its shortcuts.</string>
+    <string name="toolbar_shortcuts_unsupported">That app did not return a shortcut</string>
+    <string name="toolbar_shortcut_failed">Could not start %s</string>
     <string name="customize_toolbar_key_codes">Customize toolbar key codes</string>
     <!-- Confirmation message when resetting all custom toolbar key codes -->
     <string name="customize_toolbar_key_code_reset_message">Really clear all customized key codes?</string>
@@ -966,6 +979,8 @@ New dictionary:
     <string name="key_code">Key code</string>
     <!-- Text for showing / setting long press code -->
     <string name="long_press_code">Long press code</string>
+    <string name="flick_up_code">Flick up code (needs flick typing)</string>
+    <string name="flick_down_code">Flick down code (needs flick typing)</string>
     <!-- Title of the setting for showing the toolbar automatically -->
     <string name="auto_show_toolbar">Auto show toolbar</string>
     <!-- Description of the setting for showing the toolbar automatically -->

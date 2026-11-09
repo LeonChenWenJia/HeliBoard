@@ -66,6 +66,7 @@ public class SettingsValues {
     public final boolean mKeyPreviewPopupOn;
     public final boolean mFlickTyping;
     public final float mFlickThreshold;
+    public final boolean mFlickOverGesture;
     public final boolean mShowsVoiceInputKey;
     public final boolean mLanguageSwitchKeyToOtherImes;
     public final boolean mLanguageSwitchKeyToOtherSubtypes;
@@ -117,6 +118,7 @@ public class SettingsValues {
     public final int mGestureTrailFadeoutDuration;
     public final boolean mSlidingKeyInputPreviewEnabled;
     public final int mKeyLongpressTimeout;
+    public final boolean mKeyLongpressEnabled;
     public final boolean mEnableEmojiAltPhysicalKey;
     public final boolean mEnableHardwareKeyboard;
     public final boolean mIsSplitKeyboardEnabled;
@@ -202,6 +204,7 @@ public class SettingsValues {
         mKeyPreviewPopupOn = prefs.getBoolean(Settings.PREF_POPUP_ON, Defaults.PREF_POPUP_ON);
         mFlickTyping = prefs.getBoolean(Settings.PREF_FLICK_TYPING, Defaults.PREF_FLICK_TYPING);
         mFlickThreshold = prefs.getFloat(Settings.PREF_FLICK_THRESHOLD, Defaults.PREF_FLICK_THRESHOLD);
+        mFlickOverGesture = prefs.getBoolean(Settings.PREF_FLICK_OVER_GESTURE, Defaults.PREF_FLICK_OVER_GESTURE);
         mSlidingKeyInputPreviewEnabled = prefs.getBoolean(
                 DebugSettings.PREF_SLIDING_KEY_INPUT_PREVIEW, Defaults.PREF_SLIDING_KEY_INPUT_PREVIEW);
         mShowsVoiceInputKey = mInputAttributes.mShouldShowVoiceInputKey;
@@ -255,6 +258,7 @@ public class SettingsValues {
         mQuickPinToolbarKeys = mToolbarMode == ToolbarMode.EXPANDABLE && prefs.getBoolean(Settings.PREF_QUICK_PIN_TOOLBAR_KEYS, Defaults.PREF_QUICK_PIN_TOOLBAR_KEYS);
 
         // Compute other readable settings
+        mKeyLongpressEnabled = prefs.getBoolean(Settings.PREF_KEY_LONGPRESS_ENABLED, Defaults.PREF_KEY_LONGPRESS_ENABLED);
         mKeyLongpressTimeout = prefs.getInt(Settings.PREF_KEY_LONGPRESS_TIMEOUT, Defaults.PREF_KEY_LONGPRESS_TIMEOUT);
         mKeypressVibrationDuration = prefs.getInt(Settings.PREF_VIBRATION_DURATION_SETTINGS, Defaults.PREF_VIBRATION_DURATION_SETTINGS);
         mKeypressSoundVolume = prefs.getFloat(Settings.PREF_KEYPRESS_SOUND_VOLUME, Defaults.PREF_KEYPRESS_SOUND_VOLUME);

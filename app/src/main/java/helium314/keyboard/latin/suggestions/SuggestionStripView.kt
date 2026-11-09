@@ -47,6 +47,10 @@ import helium314.keyboard.latin.utils.ToolbarKey
 import helium314.keyboard.latin.utils.ToolbarMode
 import helium314.keyboard.latin.utils.addPinnedKey
 import helium314.keyboard.latin.utils.createToolbarKey
+import helium314.keyboard.latin.utils.ToolbarShortcut
+import helium314.keyboard.latin.utils.createShortcutToolbarKey
+import helium314.keyboard.latin.utils.launchToolbarShortcut
+import helium314.keyboard.latin.utils.readToolbarShortcuts
 import helium314.keyboard.latin.utils.dpToPx
 import helium314.keyboard.latin.utils.getEnabledToolbarKeys
 import helium314.keyboard.latin.utils.getPinnedToolbarKeys
@@ -58,6 +62,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
 import kotlin.math.min
 import androidx.core.view.isGone
+import helium314.keyboard.latin.utils.ToolbarFlickListener
 import helium314.keyboard.latin.utils.onClickToolbarKey
 import helium314.keyboard.latin.utils.onLongClickToolbarKey
 import kotlinx.coroutines.Dispatchers
@@ -157,6 +162,15 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
             val button = createToolbarKey(context, key)
             button.layoutParams = toolbarKeyLayoutParams
             setupKey(button, colors)
+            toolbar.addView(button)
+        }
+        for (shortcut in readToolbarShortcuts(context.prefs())) {
+            val button = createShortcutToolbarKey(context, shortcut)
+            button.layoutParams = toolbarKeyLayoutParams
+            button.setOnClickListener(this)
+            button.setOnLongClickListener(this)
+            (button.layoutParams as LinearLayout.LayoutParams).weight = 1f
+            colors.setBackground(button, ColorType.STRIP_BACKGROUND)
             toolbar.addView(button)
         }
         for (pinnedKey in getPinnedToolbarKeys(context.prefs())) {
@@ -328,6 +342,11 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
 
     override fun onClick(view: View) {
         val tag = view.tag
+        if (tag is ToolbarShortcut) {
+            AudioAndHapticFeedbackManager.getInstance().performHapticAndAudioFeedback(KeyCode.NOT_SPECIFIED, view, HapticEvent.KEY_PRESS)
+            launchToolbarShortcut(context, tag)
+            return
+        }
         if (tag is ToolbarKey) {
             onClickToolbarKey(view) { listener.onCodeInput(it, Constants.SUGGESTION_STRIP_COORDINATE, Constants.SUGGESTION_STRIP_COORDINATE, false) }
             return
@@ -348,6 +367,7 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
     }
 
     override fun onLongClick(view: View): Boolean {
+        if (view.tag is ToolbarShortcut) return true // no long press action, but do not open more suggestions
         if (view.tag is ToolbarKey) {
             onLongClickToolbarKey(view)
             return true
@@ -541,6 +561,7 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
     private fun setupKey(view: ImageButton, colors: Colors) {
         view.setOnClickListener(this)
         view.setOnLongClickListener(this)
+        view.setOnTouchListener(ToolbarFlickListener { listener.onCodeInput(it, Constants.SUGGESTION_STRIP_COORDINATE, Constants.SUGGESTION_STRIP_COORDINATE, false) })
         (view.layoutParams as LinearLayout.LayoutParams).weight = 1f
         colors.setColor(view, ColorType.TOOL_BAR_KEY)
         colors.setBackground(view, ColorType.STRIP_BACKGROUND)

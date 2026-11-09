@@ -154,6 +154,13 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
         metaAfterCodeInput(primaryCode)
     }
 
+    /** arrow key with shift held, extends the selection */
+    private fun sendShiftedArrow(code: Int): Boolean {
+        latinIME.onEvent(Event.createSoftwareKeypressEvent(code, metaState or KeyEvent.META_SHIFT_ON,
+            Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false))
+        return true
+    }
+
     override fun onTextInput(text: String?) = latinIME.onTextInput(text)
 
     override fun onContent(content: InputContentInfoCompat) {
@@ -190,6 +197,10 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
             keyboardSwitcher.mainKeyboardView?.alpha = 1f
             true
         }
+        KeyboardActionListener.CustomAction.SELECT_LEFT -> sendShiftedArrow(KeyCode.ARROW_LEFT)
+        KeyboardActionListener.CustomAction.SELECT_RIGHT -> sendShiftedArrow(KeyCode.ARROW_RIGHT)
+        KeyboardActionListener.CustomAction.SELECT_UP -> sendShiftedArrow(KeyCode.ARROW_UP)
+        KeyboardActionListener.CustomAction.SELECT_DOWN -> sendShiftedArrow(KeyCode.ARROW_DOWN)
         KeyboardActionListener.CustomAction.PERFORM_HAPTIC -> {
             performHapticFeedback(HapticEvent.KEY_LONG_PRESS)
             true
@@ -233,6 +244,14 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
 
             if (abs(steps) >= requiredSteps) {
                 TouchpadHandler.setTouchpadModeActive(true)
+                true
+            } else {
+                false
+            }
+        }
+        KeyboardActionListener.SwipeAction.TOUCHPAD_SELECT -> {
+            if (abs(steps) >= 8) {
+                TouchpadHandler.setTouchpadModeActive(true, true)
                 true
             } else {
                 false

@@ -60,15 +60,17 @@ fun AdvancedSettingsScreen(
         Log.v("irrelevant", "stupid way to trigger recomposition on preference change")
     val items = listOf(
         Settings.PREF_ALWAYS_INCOGNITO_MODE,
-        Settings.PREF_KEY_LONGPRESS_TIMEOUT,
+        Settings.PREF_KEY_LONGPRESS_ENABLED,
+        if (prefs.getBoolean(Settings.PREF_KEY_LONGPRESS_ENABLED, Defaults.PREF_KEY_LONGPRESS_ENABLED))
+            Settings.PREF_KEY_LONGPRESS_TIMEOUT else null,
         Settings.PREF_SPACE_HORIZONTAL_SWIPE,
         Settings.PREF_SPACE_VERTICAL_SWIPE,
         if (Settings.readHorizontalSpaceSwipe(prefs) == KeyboardActionListener.SwipeAction.SWITCH_LANGUAGE
             || Settings.readVerticalSpaceSwipe(prefs) == KeyboardActionListener.SwipeAction.SWITCH_LANGUAGE)
             Settings.PREF_LANGUAGE_SWIPE_DISTANCE else null,
-        if (Settings.readVerticalSpaceSwipe(prefs) == KeyboardActionListener.SwipeAction.TOUCHPAD_MODE)
+        if (Settings.readVerticalSpaceSwipe(prefs).let { it == KeyboardActionListener.SwipeAction.TOUCHPAD_MODE || it == KeyboardActionListener.SwipeAction.TOUCHPAD_SELECT })
             Settings.PREF_TOUCHPAD_SENSITIVITY else null,
-        if (Settings.readVerticalSpaceSwipe(prefs) == KeyboardActionListener.SwipeAction.TOUCHPAD_MODE)
+        if (Settings.readVerticalSpaceSwipe(prefs).let { it == KeyboardActionListener.SwipeAction.TOUCHPAD_MODE || it == KeyboardActionListener.SwipeAction.TOUCHPAD_SELECT })
             Settings.PREF_TOUCHPAD_EDGE_SCROLL else null,
         Settings.PREF_DELETE_SWIPE,
         Settings.PREF_SPACE_TO_CHANGE_LANG,
@@ -105,6 +107,11 @@ fun createAdvancedSettings(context: Context) = listOf(
     {
         SwitchPreference(it, Defaults.PREF_ALWAYS_INCOGNITO_MODE) { KeyboardSwitcher.getInstance().setThemeNeedsReload() }
     },
+    Setting(context, Settings.PREF_KEY_LONGPRESS_ENABLED,
+        R.string.prefs_key_longpress_enabled, R.string.prefs_key_longpress_enabled_summary)
+    {
+        SwitchPreference(it, Defaults.PREF_KEY_LONGPRESS_ENABLED)
+    },
     Setting(context, Settings.PREF_KEY_LONGPRESS_TIMEOUT, R.string.prefs_key_longpress_timeout_settings) { setting ->
         SliderPreference(
             name = setting.title,
@@ -132,6 +139,7 @@ fun createAdvancedSettings(context: Context) = listOf(
             stringResource(R.string.space_swipe_toggle_dpad_entry) to KeyboardActionListener.SwipeAction.TOGGLE_DPAD.name,
             stringResource(R.string.space_swipe_hide_keyboard_entry) to KeyboardActionListener.SwipeAction.HIDE_KEYBOARD.name,
             stringResource(R.string.space_swipe_touchpad_mode_entry) to KeyboardActionListener.SwipeAction.TOUCHPAD_MODE.name,
+            stringResource(R.string.space_swipe_touchpad_select_entry) to KeyboardActionListener.SwipeAction.TOUCHPAD_SELECT.name,
             stringResource(R.string.action_none) to KeyboardActionListener.SwipeAction.NONE.name,
         )
         ListPreference(it, items, Defaults.PREF_SPACE_VERTICAL_SWIPE)

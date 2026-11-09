@@ -457,8 +457,16 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
         }
     }
 
+
+    /** Glide typing is off while flick typing is on, if the user chose flick over glide typing. */
+    private static boolean gestureEnabled() {
+        final SettingsValues sv = Settings.getValues();
+        if (sv != null && sv.mFlickTyping && sv.mFlickOverGesture) return false;
+        return sGestureEnabler.shouldHandleGesture();
+    }
+
     private static boolean needsToSuppressKeyPreviewPopup(final long eventTime) {
-        if (!sGestureEnabler.shouldHandleGesture()) return false;
+        if (!gestureEnabled()) return false;
         return sTypingTimeRecorder.needsToSuppressKeyPreviewPopup(eventTime);
     }
 
@@ -684,7 +692,7 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
         }
         sPointerTrackerQueue.add(this);
         onDownEventInternal(x, y, eventTime);
-        if (!sGestureEnabler.shouldHandleGesture()) {
+        if (!gestureEnabled()) {
             return;
         }
         // A gesture should start only from a non-modifier key. Note that the gesture detection is
@@ -821,7 +829,7 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
             return;
         }
 
-        if (sGestureEnabler.shouldHandleGesture() && me != null) {
+        if (gestureEnabled() && me != null) {
             // Add historical points to gesture path.
             final int pointerIndex = me.findPointerIndex(mPointerId);
             final int historicalSize = me.getHistorySize();
@@ -1016,7 +1024,7 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
         final int lastX = mLastX;
         final int lastY = mLastY;
 
-        if (sGestureEnabler.shouldHandleGesture()) {
+        if (gestureEnabled()) {
             // Register move event on gesture tracker.
             onGestureMoveEvent(x, y, eventTime, true, newKey);
             if (sInGesture) {
@@ -1156,25 +1164,48 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
         }
     }
 
-    /** Returns the popup key index (0 up, 1 left, 2 right, 3 down) of a flick starting on [flickKey], or -1 if there is none. */
+    private static final int FLICK_NONE = -1;
+    private static final int FLICK_DELETE_SLASH = -3; // delete key flicked down -> type "/"
+    private static final int FLICK_BASE_KEY = -2; // flicked in a direction without popup key -> type the first key
+
+    /**
+     * Returns the popup key index (0 up, 1 left, 2 right, 3 down) of a flick starting on [flickKey],
+     * [FLICK_BASE_KEY] if the flick direction has no popup key, or [FLICK_NONE] if there is no flick.
+     */
     private int getFlickIndex(final Key flickKey, final int x, final int y) {
-        if (!Settings.getValues().mFlickTyping || flickKey.isModifier() || isSwiper(flickKey.getCode()))
-            return -1;
-        final PopupKeySpec[] popupKeys = flickKey.getPopupKeys();
-        if (popupKeys == null)
-            return -1;
+        if (!Settings.getValues().mFlickTyping || flickKey.isModifier())
+            return FLICK_NONE;
         final int dX = x - mFlickDownX;
         final int dY = y - mFlickDownY;
+        final boolean isDelete = flickKey.getCode() == KeyCode.DELETE;
+        // delete: only vertical flicks, horizontal moves stay the delete slider
+        if (isDelete && abs(dX) > abs(dY))
+            return FLICK_NONE;
+        if (!isDelete && isSwiper(flickKey.getCode()))
+            return FLICK_NONE;
         final int threshold = (int) (Settings.getValues().mFlickThreshold
                 * Math.min(mKeyboard.mMostCommonKeyWidth, mKeyboard.mMostCommonKeyHeight));
-        if (Math.max(abs(dX), abs(dY)) < threshold)
-            return -1;
-        // popup key order -> up, left, right, down
-        final int index = abs(dX) > abs(dY) ? (dX < 0 ? 1 : 2) : (dY < 0 ? 0 : 3);
-        return index < popupKeys.length ? index : -1;
+        // leaving the key counts as a flick even if the distance threshold was not reached yet
+        if (Math.max(abs(dX), abs(dY)) < threshold && flickKey.isOnKey(x, y))
+            return FLICK_NONE;
+        // popup key order -> down, left, right, up
+        final int index = abs(dX) > abs(dY) ? (dX < 0 ? 1 : 2) : (dY < 0 ? 3 : 0);
+        if (isDelete) // flick down types "/" (first popup key), flick up deletes
+            return index == 0 ? FLICK_DELETE_SLASH : FLICK_BASE_KEY;
+        final PopupKeySpec[] popupKeys = flickKey.getPopupKeys();
+        return popupKeys != null && index < popupKeys.length ? index : FLICK_BASE_KEY;
     }
 
     private void commitFlick(final Key flickKey, final int index, final long eventTime) {
+        if (index == FLICK_BASE_KEY) {
+            callListenerOnCodeInput(flickKey, flickKey.getCode(), mFlickDownX, mFlickDownY, eventTime, false);
+            return;
+        }
+        if (index == FLICK_DELETE_SLASH) {
+            sTypingTimeRecorder.onCodeInput('/', eventTime);
+            sListener.onCodeInput('/', Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false);
+            return;
+        }
         final PopupKeySpec spec = flickKey.getPopupKeys()[index];
         sTypingTimeRecorder.onCodeInput(spec.mCode, eventTime);
         if (spec.mCode == KeyCode.MULTIPLE_CODE_POINTS) {
@@ -1191,7 +1222,10 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
     private boolean tryImmediateFlick(final int x, final int y, final long eventTime) {
         final Key flickKey = mFlickKey;
         final int index = getFlickIndex(flickKey, x, y);
-        if (index < 0 || (index == 1 || index == 2) && sGestureEnabler.shouldHandleGesture())
+        if (index == FLICK_NONE)
+            return false;
+        final boolean horizontal = abs(x - mFlickDownX) > abs(y - mFlickDownY);
+        if (horizontal && gestureEnabled())
             return false;
         mFlickKey = null;
         sTimerProxy.cancelKeyTimersOf(this);
@@ -1209,7 +1243,7 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
     /** Handles a flick that was not already typed while moving. Returns true if handled. */
     private boolean handleFlick(final Key flickKey, final Key currentKey, final int x, final int y, final long eventTime) {
         final int index = getFlickIndex(flickKey, x, y);
-        if (index < 0)
+        if (index == FLICK_NONE)
             return false;
         commitFlick(flickKey, index, eventTime);
         if (currentKey != null) // finger never left the key, so it still needs to be released
@@ -1343,6 +1377,7 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
         sTimerProxy.cancelLongPressAlphaSymbolKeyTimer();
         if (sInGesture) return;
         if (key == null) return;
+        if (!Settings.getValues().mKeyLongpressEnabled && key.getCode() != KeyCode.SHIFT) return; // shift lock stays available
         if (!key.isLongPressEnabled()) return;
         // Caveat: Please note that isLongPressEnabled() can be true even if the current key
         // doesn't have its popup keys. (e.g. spacebar, globe key) If we are in the dragging finger

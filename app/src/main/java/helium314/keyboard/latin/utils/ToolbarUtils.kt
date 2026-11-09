@@ -3,6 +3,7 @@ package helium314.keyboard.latin.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
@@ -279,3 +280,56 @@ private fun repeatToolbarKey(view: View, onClick: (view: View) -> Unit) {
 }
 
 private var customToolbarKeyCodes: EnumMap<ToolbarKey, Pair<Int?, Int?>>? = null
+
+private const val PREF_TOOLBAR_FLICK_CODES = "toolbar_custom_flick_codes"
+
+/** flick up / flick down codes per toolbar key, stored as "KEY,up,down;KEY,up,down" */
+fun readFlickCodes(prefs: SharedPreferences): EnumMap<ToolbarKey, Pair<Int?, Int?>> {
+    val map = EnumMap<ToolbarKey, Pair<Int?, Int?>>(ToolbarKey::class.java)
+    prefs.getString(PREF_TOOLBAR_FLICK_CODES, "")!!.split(";").forEach {
+        runCatching {
+            val s = it.split(",")
+            map[ToolbarKey.valueOf(s[0])] = s[1].toIntOrNull() to s[2].toIntOrNull()
+        }
+    }
+    return map
+}
+
+fun writeFlickCodes(prefs: SharedPreferences, codes: EnumMap<ToolbarKey, Pair<Int?, Int?>>) {
+    val string = codes.entries.joinToString(";") { "${it.key.name},${it.value.first ?: ""},${it.value.second ?: ""}" }
+    prefs.edit { putString(PREF_TOOLBAR_FLICK_CODES, string) }
+}
+
+fun clearFlickCodes(prefs: SharedPreferences) = prefs.edit { remove(PREF_TOOLBAR_FLICK_CODES) }
+
+/**
+ * Touch listener for toolbar keys: a vertical flick runs the key's flick up / flick down code.
+ * Only active with flick typing on. A flick cancels the long press and the click.
+ */
+class ToolbarFlickListener(private val onCodeInput: (Int) -> Unit) : View.OnTouchListener {
+    private var downX = 0f
+    private var downY = 0f
+    private var flicked = false
+
+    override fun onTouch(view: View, event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> { downX = event.x; downY = event.y; flicked = false }
+            MotionEvent.ACTION_MOVE -> if (!flicked && Settings.getValues().mFlickTyping) {
+                val dx = event.x - downX
+                val dy = event.y - downY
+                val threshold = Settings.getValues().mFlickThreshold * minOf(view.width, view.height)
+                if (Math.abs(dy) >= threshold && Math.abs(dy) > Math.abs(dx)) {
+                    val key = view.tag as? ToolbarKey ?: return false
+                    val codes = readFlickCodes(view.context.prefs())[key] ?: return false
+                    val code = (if (dy < 0) codes.first else codes.second) ?: return false
+                    flicked = true
+                    view.cancelLongPress()
+                    view.isPressed = false
+                    AudioAndHapticFeedbackManager.getInstance().performHapticAndAudioFeedback(KeyCode.NOT_SPECIFIED, view, HapticEvent.KEY_PRESS)
+                    onCodeInput(code)
+                }
+            }
+        }
+        return flicked // swallow the rest of a flick so it does not click
+    }
+}

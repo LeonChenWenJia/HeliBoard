@@ -66,6 +66,7 @@ public final class Settings implements SharedPreferences.OnSharedPreferenceChang
     public static final String PREF_USER_MORE_COLORS_PREFIX = "user_more_colors_";
 
     public static final String PREF_CUSTOM_ICON_NAMES = "custom_icon_names";
+    public static final String PREF_TOOLBAR_SHORTCUTS = "toolbar_shortcuts";
     public static final String PREF_TOOLBAR_CUSTOM_KEY_CODES = "toolbar_custom_key_codes";
     public static final String PREF_LAYOUT_PREFIX = "layout_";
 
@@ -79,6 +80,7 @@ public final class Settings implements SharedPreferences.OnSharedPreferenceChang
     public static final String PREF_POPUP_ON = "popup_on";
     public static final String PREF_FLICK_TYPING = "flick_typing";
     public static final String PREF_FLICK_THRESHOLD = "flick_threshold";
+    public static final String PREF_FLICK_OVER_GESTURE = "flick_over_gesture";
     public static final String PREF_AUTO_CORRECTION = "auto_correction";
     public static final String PREF_MORE_AUTO_CORRECTION = "more_auto_correction";
     public static final String PREF_AUTO_CORRECT_CONFIDENCE = "auto_correct_confidence";
@@ -135,6 +137,7 @@ public final class Settings implements SharedPreferences.OnSharedPreferenceChang
     public static final String PREF_VIBRATION_DURATION_SETTINGS = "vibration_duration_settings";
     public static final String PREF_KEYPRESS_SOUND_VOLUME = "keypress_sound_volume";
     public static final String PREF_KEY_LONGPRESS_TIMEOUT = "key_longpress_timeout";
+    public static final String PREF_KEY_LONGPRESS_ENABLED = "key_longpress_enabled";
     public static final String PREF_ENABLE_EMOJI_ALT_PHYSICAL_KEY = "enable_emoji_alt_physical_key";
     public static final String PREF_ENABLE_HARDWARE_KEYBOARD = "enable_hardware_keyboard";
     public static final String PREF_GESTURE_PREVIEW_TRAIL = "gesture_preview_trail";

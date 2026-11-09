@@ -32,6 +32,9 @@ import helium314.keyboard.latin.utils.getCodeForToolbarKeyLongClick
 import helium314.keyboard.latin.utils.getStringResourceOrName
 import helium314.keyboard.latin.utils.prefs
 import helium314.keyboard.latin.utils.readCustomKeyCodes
+import helium314.keyboard.latin.utils.readFlickCodes
+import helium314.keyboard.latin.utils.writeFlickCodes
+import helium314.keyboard.latin.utils.clearFlickCodes
 import helium314.keyboard.latin.utils.writeCustomKeyCodes
 import helium314.keyboard.latin.utils.Theme
 import helium314.keyboard.settings.initPreview
@@ -53,7 +56,7 @@ fun ToolbarKeysCustomizer(
         cancelButtonText = stringResource(R.string.dialog_close),
         confirmButtonText = null,
         onConfirmed = { },
-        neutralButtonText = if (readCustomKeyCodes(prefs).isNotEmpty()) stringResource(R.string.button_default) else null,
+        neutralButtonText = if (readCustomKeyCodes(prefs).isNotEmpty() || readFlickCodes(prefs).isNotEmpty()) stringResource(R.string.button_default) else null,
         onNeutral = { showDeletePrefConfirmDialog = true },
         title = { Text(stringResource(R.string.customize_toolbar_key_codes)) },
         content = {
@@ -84,6 +87,7 @@ fun ToolbarKeysCustomizer(
                 showDeletePrefConfirmDialog = false
                 onDismissRequest()
                 prefs.edit { remove(key) }
+                clearFlickCodes(prefs)
             },
             content = { Text(stringResource(R.string.customize_toolbar_key_code_reset_message)) }
         )
@@ -98,15 +102,26 @@ private fun ToolbarKeyCustomizer(
     val prefs = ctx.prefs()
     var code by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(getCodeForToolbarKey(key).toString())) }
     var longPressCode by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(getCodeForToolbarKeyLongClick(key).toString())) }
+    val flick = readFlickCodes(prefs)[key]
+    var flickUp by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(flick?.first?.toString() ?: "")) }
+    var flickDown by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(flick?.second?.toString() ?: "")) }
     ThreeButtonAlertDialog(
         onDismissRequest = onDismissRequest,
         onConfirmed = {
             val codes = readCustomKeyCodes(prefs)
             codes[key] = checkCode(code) to checkCode(longPressCode, true)
             writeCustomKeyCodes(prefs, codes)
+            val flicks = readFlickCodes(prefs)
+            if (flickUp.text.isEmpty() && flickDown.text.isEmpty()) flicks.remove(key)
+            else flicks[key] = checkCode(flickUp) to checkCode(flickDown)
+            writeFlickCodes(prefs, flicks)
         },
-        checkOk = { checkCode(code) != null && checkCode(longPressCode, true) != null },
-        neutralButtonText = if (readCustomKeyCodes(prefs).containsKey(key))
+        checkOk = {
+            checkCode(code) != null && checkCode(longPressCode, true) != null
+                && (flickUp.text.isEmpty() || checkCode(flickUp) != null)
+                && (flickDown.text.isEmpty() || checkCode(flickDown) != null)
+        },
+        neutralButtonText = if (readCustomKeyCodes(prefs).containsKey(key) || readFlickCodes(prefs).containsKey(key))
                 stringResource(R.string.button_default)
             else null,
         onNeutral = {
@@ -114,6 +129,9 @@ private fun ToolbarKeyCustomizer(
             val keys = readCustomKeyCodes(prefs)
             keys.remove(key)
             writeCustomKeyCodes(prefs, keys)
+            val flicks = readFlickCodes(prefs)
+            flicks.remove(key)
+            writeFlickCodes(prefs, flicks)
         },
         title = { Text(key.name.lowercase().getStringResourceOrName("", ctx)) },
         content = {
@@ -132,6 +150,24 @@ private fun ToolbarKeyCustomizer(
                     TextField(
                         value = longPressCode,
                         onValueChange = { longPressCode = it },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(0.5f)
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.flick_up_code), Modifier.weight(0.5f))
+                    TextField(
+                        value = flickUp,
+                        onValueChange = { flickUp = it },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(0.5f)
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.flick_down_code), Modifier.weight(0.5f))
+                    TextField(
+                        value = flickDown,
+                        onValueChange = { flickDown = it },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(0.5f)
                     )

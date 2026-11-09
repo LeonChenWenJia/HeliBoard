@@ -54,6 +54,8 @@ fun PreferencesScreen(
         Settings.PREF_FLICK_TYPING,
         if (prefs.getBoolean(Settings.PREF_FLICK_TYPING, Defaults.PREF_FLICK_TYPING))
             Settings.PREF_FLICK_THRESHOLD else null,
+        if (prefs.getBoolean(Settings.PREF_FLICK_TYPING, Defaults.PREF_FLICK_TYPING))
+            Settings.PREF_FLICK_OVER_GESTURE else null,
         if (AudioAndHapticFeedbackManager.getInstance().hasVibrator())
             Settings.PREF_VIBRATE_ON else null,
         if (prefs.getBoolean(Settings.PREF_VIBRATE_ON, Defaults.PREF_VIBRATE_ON))
@@ -130,6 +132,9 @@ fun createPreferencesSettings(context: Context) = listOf(
             description = { (it * 100).toInt().toString() + "%" },
             range = 0.1f..0.6f,
         )
+    },
+    Setting(context, Settings.PREF_FLICK_OVER_GESTURE, R.string.flick_over_gesture, R.string.flick_over_gesture_summary) {
+        SwitchPreference(it, Defaults.PREF_FLICK_OVER_GESTURE)
     },
     Setting(context, Settings.PREF_VIBRATE_ON, R.string.vibrate_on_keypress) {
         SwitchPreference(it, Defaults.PREF_VIBRATE_ON)

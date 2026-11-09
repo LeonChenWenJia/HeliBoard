@@ -27,6 +27,7 @@ import helium314.keyboard.settings.Setting
 import helium314.keyboard.settings.SettingsActivity
 import helium314.keyboard.latin.utils.Theme
 import helium314.keyboard.settings.dialogs.ToolbarKeysCustomizer
+import helium314.keyboard.settings.dialogs.ToolbarShortcutsDialog
 import helium314.keyboard.settings.initPreview
 import helium314.keyboard.settings.preferences.ListPreference
 import helium314.keyboard.settings.preferences.Preference
@@ -59,6 +60,7 @@ fun ToolbarScreen(
         },
         if (clipboardToolbarVisible) Settings.PREF_CLIPBOARD_TOOLBAR_KEYS else null,
         if (clipboardToolbarVisible) Settings.PREF_TOOLBAR_CUSTOM_KEY_CODES else null,
+        if (toolbarMode != ToolbarMode.HIDDEN) Settings.PREF_TOOLBAR_SHORTCUTS else null,
         if (toolbarMode == ToolbarMode.EXPANDABLE) Settings.PREF_QUICK_PIN_TOOLBAR_KEYS else null,
         if (toolbarMode == ToolbarMode.EXPANDABLE) Settings.PREF_AUTO_SHOW_TOOLBAR else null,
         if (toolbarMode == ToolbarMode.EXPANDABLE) Settings.PREF_AUTO_HIDE_TOOLBAR else null,
@@ -116,6 +118,11 @@ fun createToolbarSettings(context: Context) = listOf(
                 key = it.key,
                 onDismissRequest = { showDialog = false }
             )
+    },
+    Setting(context, Settings.PREF_TOOLBAR_SHORTCUTS, R.string.toolbar_shortcuts) {
+        var showDialog by rememberSaveable { mutableStateOf(false) }
+        Preference(name = it.title, onClick = { showDialog = true })
+        if (showDialog) ToolbarShortcutsDialog { showDialog = false }
     },
     Setting(context, Settings.PREF_QUICK_PIN_TOOLBAR_KEYS,
         R.string.quick_pin_toolbar_keys, R.string.quick_pin_toolbar_keys_summary)

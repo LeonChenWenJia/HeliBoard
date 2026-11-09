@@ -456,6 +456,8 @@ public class KeyboardView extends View {
 
         // Draw hint label.
         String hintLabel = key.getHintLabel();
+        if (hintLabel == null && key.getCode() == KeyCode.DELETE && Settings.getValues().mFlickTyping)
+            hintLabel = "/"; // flick down on delete types "/"
         Drawable hintIcon = (keyboard == null || !mShowsHints || hintLabel != null) ? null
                         : key.getHintIcon(keyboard.mIconsSet, params.mAnimAlpha);
         if (hintLabel != null && mShowsHints) {
