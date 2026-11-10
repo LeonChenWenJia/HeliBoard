@@ -285,8 +285,30 @@ fun onLongClickToolbarKey(view: View, onCodeInput: (Int, Boolean) -> Unit) {
         onClickToolbarKey(view) { onCodeInput(it, false) }
         repeatToolbarKey(view) { onClickToolbarKey(view) { onCodeInput(it, true) } }
     } else if (longClickCode != KeyCode.UNSPECIFIED) {
+        showToolbarActionPopup(view, longClickCode)
         onCodeInput(longClickCode, false)
     }
+}
+
+/** shows a small bubble with the icon of the action above the toolbar key; nothing if the code has no toolbar icon */
+fun showToolbarActionPopup(view: View, code: Int) {
+    val toolbarKey = ToolbarKey.entries.firstOrNull { it != CLOSE_HISTORY && it != BACKGROUND_GATHERING && getDefaultCodeForToolbarKey(it) == code } ?: return
+    val drawable = KeyboardIconsSet.instance.getNewDrawable(toolbarKey.name, view.context) ?: return
+    if (view.windowToken == null) return
+    val size = (view.height * 1.1f).toInt().coerceAtLeast(1)
+    val image = ImageView(view.context).apply {
+        setImageDrawable(drawable)
+        setPadding(size / 6, size / 6, size / 6, size / 6)
+        background = android.graphics.drawable.GradientDrawable().apply {
+            setColor(0xEE333333.toInt())
+            cornerRadius = size / 4f
+        }
+    }
+    val popup = android.widget.PopupWindow(image, size, size)
+    popup.isTouchable = false
+    popup.isFocusable = false
+    runCatching { popup.showAsDropDown(view, (view.width - size) / 2, -(view.height + size)) }.onFailure { return }
+    view.postDelayed({ if (popup.isShowing) popup.dismiss() }, 400)
 }
 
 private fun repeatToolbarKey(view: View, onClick: (view: View) -> Unit) {
@@ -352,6 +374,7 @@ class ToolbarFlickListener(private val onCodeInput: (Int) -> Unit) : View.OnTouc
                     view.cancelLongPress()
                     view.isPressed = false
                     AudioAndHapticFeedbackManager.getInstance().performHapticAndAudioFeedback(KeyCode.NOT_SPECIFIED, view, HapticEvent.KEY_PRESS)
+                    showToolbarActionPopup(view, code)
                     onCodeInput(code)
                 }
             }
