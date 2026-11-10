@@ -157,6 +157,20 @@ class KeyboardIconsSet private constructor() {
                     ToolbarKey.PAGE_END -> R.drawable.ic_page_end
                     ToolbarKey.SPLIT -> R.drawable.ic_ime_switcher
                     ToolbarKey.BACKGROUND_GATHERING -> R.drawable.ic_settings_gesture
+                    ToolbarKey.DELETE_WORD -> R.drawable.sym_keyboard_delete_holo
+                    ToolbarKey.COPY_ALL -> R.drawable.sym_keyboard_copy
+                    ToolbarKey.TAB -> R.drawable.sym_keyboard_tab_holo
+                    ToolbarKey.ESCAPE -> R.drawable.ic_close
+                    ToolbarKey.SHIFT_ENTER -> R.drawable.sym_keyboard_return_holo
+                    ToolbarKey.NEXT_FIELD -> R.drawable.ic_dpad_right
+                    ToolbarKey.LANGUAGE_SWITCH -> R.drawable.sym_keyboard_language_switch
+                    ToolbarKey.HIDE_KEYBOARD -> R.drawable.ic_keyboard_hide
+                    ToolbarKey.TIMESTAMP -> R.drawable.ic_clock
+                    ToolbarKey.BACK -> R.drawable.ic_dpad_left
+                    ToolbarKey.CTRL -> R.drawable.ic_key_ctrl
+                    ToolbarKey.ALT -> R.drawable.ic_key_alt
+                    ToolbarKey.META -> R.drawable.ic_key_meta
+                    ToolbarKey.FN -> R.drawable.ic_key_fn
                 })
             }
         } }
@@ -221,6 +235,20 @@ class KeyboardIconsSet private constructor() {
                     ToolbarKey.PAGE_END -> R.drawable.ic_page_end
                     ToolbarKey.SPLIT -> R.drawable.ic_ime_switcher
                     ToolbarKey.BACKGROUND_GATHERING -> R.drawable.ic_settings_gesture
+                    ToolbarKey.DELETE_WORD -> R.drawable.sym_keyboard_delete_lxx
+                    ToolbarKey.COPY_ALL -> R.drawable.sym_keyboard_copy
+                    ToolbarKey.TAB -> R.drawable.sym_keyboard_tab_lxx
+                    ToolbarKey.ESCAPE -> R.drawable.ic_close
+                    ToolbarKey.SHIFT_ENTER -> R.drawable.sym_keyboard_return_lxx
+                    ToolbarKey.NEXT_FIELD -> R.drawable.ic_dpad_right
+                    ToolbarKey.LANGUAGE_SWITCH -> R.drawable.sym_keyboard_language_switch_lxx
+                    ToolbarKey.HIDE_KEYBOARD -> R.drawable.ic_keyboard_hide
+                    ToolbarKey.TIMESTAMP -> R.drawable.ic_clock
+                    ToolbarKey.BACK -> R.drawable.ic_dpad_left
+                    ToolbarKey.CTRL -> R.drawable.ic_key_ctrl
+                    ToolbarKey.ALT -> R.drawable.ic_key_alt
+                    ToolbarKey.META -> R.drawable.ic_key_meta
+                    ToolbarKey.FN -> R.drawable.ic_key_fn
                 })
             }
         } }
@@ -285,6 +313,20 @@ class KeyboardIconsSet private constructor() {
                     ToolbarKey.PAGE_END -> R.drawable.ic_page_end_rounded
                     ToolbarKey.SPLIT -> R.drawable.ic_ime_switcher
                     ToolbarKey.BACKGROUND_GATHERING -> R.drawable.ic_settings_gesture
+                    ToolbarKey.DELETE_WORD -> R.drawable.sym_keyboard_delete_rounded
+                    ToolbarKey.COPY_ALL -> R.drawable.sym_keyboard_copy_rounded
+                    ToolbarKey.TAB -> R.drawable.sym_keyboard_tab_rounded
+                    ToolbarKey.ESCAPE -> R.drawable.ic_close_rounded
+                    ToolbarKey.SHIFT_ENTER -> R.drawable.sym_keyboard_return_rounded
+                    ToolbarKey.NEXT_FIELD -> R.drawable.ic_dpad_right_rounded
+                    ToolbarKey.LANGUAGE_SWITCH -> R.drawable.sym_keyboard_language_switch_lxx
+                    ToolbarKey.HIDE_KEYBOARD -> R.drawable.ic_keyboard_hide
+                    ToolbarKey.TIMESTAMP -> R.drawable.ic_clock
+                    ToolbarKey.BACK -> R.drawable.ic_dpad_left_rounded
+                    ToolbarKey.CTRL -> R.drawable.ic_key_ctrl
+                    ToolbarKey.ALT -> R.drawable.ic_key_alt
+                    ToolbarKey.META -> R.drawable.ic_key_meta
+                    ToolbarKey.FN -> R.drawable.ic_key_fn
                 })
             }
         } }

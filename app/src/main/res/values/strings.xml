@@ -1295,6 +1295,20 @@ New dictionary:
     <!-- Toolbar key to enable / disable background gesture data gathering
      string will probably be removed once data gathering is finished (end of 2026 latest) -->
     <string name="background_gathering" tools:keep="@string/background_gathering">Background data gathering</string>
+    <string name="delete_word" tools:keep="@string/delete_word">Delete word</string>
+    <string name="copy_all" tools:keep="@string/copy_all">Copy all</string>
+    <string name="tab" tools:keep="@string/tab">Tab</string>
+    <string name="escape" tools:keep="@string/escape">Escape</string>
+    <string name="shift_enter" tools:keep="@string/shift_enter">Shift+Enter</string>
+    <string name="next_field" tools:keep="@string/next_field">Next field</string>
+    <string name="language_switch" tools:keep="@string/language_switch">Switch language</string>
+    <string name="hide_keyboard" tools:keep="@string/hide_keyboard">Hide keyboard</string>
+    <string name="timestamp" tools:keep="@string/timestamp">Timestamp</string>
+    <string name="back" tools:keep="@string/back">Back</string>
+    <string name="ctrl" tools:keep="@string/ctrl">Ctrl</string>
+    <string name="alt" tools:keep="@string/alt">Alt</string>
+    <string name="meta" tools:keep="@string/meta">Meta</string>
+    <string name="fn" tools:keep="@string/fn">Fn</string>
     <!-- Review screen menu entry to display actively gathered data
      string will probably be removed once data gathering is finished (end of 2026 latest) -->
     <string name="gesture_data_show_active">Show actively gathered data</string>

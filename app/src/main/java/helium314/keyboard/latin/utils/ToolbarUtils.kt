@@ -62,7 +62,10 @@ private fun setToolbarButtonActivatedState(button: ImageButton) {
     }
 }
 
-fun getCodeForToolbarKey(key: ToolbarKey) = Settings.getInstance().getCustomToolbarKeyCode(key) ?: when (key) {
+fun getCodeForToolbarKey(key: ToolbarKey) = Settings.getInstance().getCustomToolbarKeyCode(key) ?: getDefaultCodeForToolbarKey(key)
+
+/** the key code of the toolbar key, ignoring any custom code */
+fun getDefaultCodeForToolbarKey(key: ToolbarKey) = when (key) {
     VOICE -> KeyCode.VOICE_INPUT
     CLIPBOARD -> KeyCode.CLIPBOARD
     NUMPAD -> KeyCode.NUMPAD
@@ -96,6 +99,20 @@ fun getCodeForToolbarKey(key: ToolbarKey) = Settings.getInstance().getCustomTool
     SPLIT -> KeyCode.SPLIT_LAYOUT
     FLOATING -> KeyCode.TOGGLE_FLOATING_WINDOW
     BACKGROUND_GATHERING -> KeyCode.BACKGROUND_GATHERING
+    DELETE_WORD -> KeyCode.DELETE_WORD
+    COPY_ALL -> KeyCode.CLIPBOARD_COPY_ALL
+    TAB -> KeyCode.TAB
+    ESCAPE -> KeyCode.ESCAPE
+    SHIFT_ENTER -> KeyCode.SHIFT_ENTER
+    NEXT_FIELD -> KeyCode.ACTION_NEXT
+    LANGUAGE_SWITCH -> KeyCode.LANGUAGE_SWITCH
+    HIDE_KEYBOARD -> KeyCode.IME_HIDE_UI
+    TIMESTAMP -> KeyCode.TIMESTAMP
+    BACK -> KeyCode.BACK
+    CTRL -> KeyCode.CTRL
+    ALT -> KeyCode.ALT
+    META -> KeyCode.META
+    FN -> KeyCode.FN
 }
 
 fun getCodeForToolbarKeyLongClick(key: ToolbarKey) = Settings.getInstance().getCustomToolbarLongpressCode(key) ?: when (key) {
@@ -122,7 +139,9 @@ fun getCodeForToolbarKeyLongClick(key: ToolbarKey) = Settings.getInstance().getC
 enum class ToolbarKey {
     VOICE, CLIPBOARD, NUMPAD, DPAD, UNDO, REDO, SETTINGS, SELECT_ALL, SELECT_WORD, COPY, CUT, PASTE, ONE_HANDED, FLOATING, SPLIT,
     INCOGNITO, AUTOCORRECT, CLEAR_CLIPBOARD, CLOSE_HISTORY, EMOJI, LEFT, RIGHT, UP, DOWN, WORD_LEFT, WORD_RIGHT,
-    PAGE_UP, PAGE_DOWN, FULL_LEFT, FULL_RIGHT, PAGE_START, PAGE_END, BACKGROUND_GATHERING
+    PAGE_UP, PAGE_DOWN, FULL_LEFT, FULL_RIGHT, PAGE_START, PAGE_END, BACKGROUND_GATHERING,
+    DELETE_WORD, COPY_ALL, TAB, ESCAPE, SHIFT_ENTER, NEXT_FIELD, LANGUAGE_SWITCH, HIDE_KEYBOARD, TIMESTAMP, BACK,
+    CTRL, ALT, META, FN
 }
 
 enum class ToolbarMode {
@@ -283,9 +302,16 @@ private var customToolbarKeyCodes: EnumMap<ToolbarKey, Pair<Int?, Int?>>? = null
 
 private const val PREF_TOOLBAR_FLICK_CODES = "toolbar_custom_flick_codes"
 
+/** default flick (up, down) codes; saved codes override these */
+val defaultFlickCodes: Map<ToolbarKey, Pair<Int?, Int?>> = mapOf(
+    COPY to (KeyCode.CLIPBOARD_CUT to KeyCode.CLIPBOARD_PASTE),
+    CLIPBOARD to (KeyCode.REDO to KeyCode.UNDO),
+)
+
 /** flick up / flick down codes per toolbar key, stored as "KEY,up,down;KEY,up,down" */
 fun readFlickCodes(prefs: SharedPreferences): EnumMap<ToolbarKey, Pair<Int?, Int?>> {
     val map = EnumMap<ToolbarKey, Pair<Int?, Int?>>(ToolbarKey::class.java)
+    map.putAll(defaultFlickCodes)
     prefs.getString(PREF_TOOLBAR_FLICK_CODES, "")!!.split(";").forEach {
         runCatching {
             val s = it.split(",")
