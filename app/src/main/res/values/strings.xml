@@ -1305,6 +1305,7 @@ New dictionary:
     <string name="hide_keyboard" tools:keep="@string/hide_keyboard">Hide keyboard</string>
     <string name="timestamp" tools:keep="@string/timestamp">Timestamp</string>
     <string name="back" tools:keep="@string/back">Back</string>
+    <string name="floating_keep" tools:keep="@string/floating_keep">Floating Keep</string>
     <string name="ctrl" tools:keep="@string/ctrl">Ctrl</string>
     <string name="alt" tools:keep="@string/alt">Alt</string>
     <string name="meta" tools:keep="@string/meta">Meta</string>

@@ -154,8 +154,70 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
         metaAfterCodeInput(primaryCode)
     }
 
-    /** arrow key with shift held, extends the selection */
+    private var shiftHeld = false
+
+    private fun sendShiftKey(action: Int) {
+        val now = android.os.SystemClock.uptimeMillis()
+        connection.sendKeyEvent(KeyEvent(now, now, action, KeyEvent.KEYCODE_SHIFT_LEFT, 0,
+            if (action == KeyEvent.ACTION_DOWN) KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON else 0,
+            android.view.KeyCharacterMap.VIRTUAL_KEYBOARD, 0, KeyEvent.FLAG_SOFT_KEYBOARD or KeyEvent.FLAG_KEEP_TOUCH_MODE))
+    }
+
+    // selection state for position based selecting, offsets are indices into selText
+    private var selText: String? = null
+    private var selOrigin = 0 // absolute offset of selText[0]
+    private var selAnchor = 0
+    private var selFocus = 0
+
+    /** extends the selection by moving the focus end, sets the selection directly instead of sending key events */
     private fun sendShiftedArrow(code: Int): Boolean {
+        val ic = latinIME.currentInputConnection
+        if (selText == null && ic != null) {
+            connection.finishComposingText()
+            val before = ic.getTextBeforeCursor(2000, 0)?.toString().orEmpty()
+            val after = ic.getTextAfterCursor(2000, 0)?.toString().orEmpty()
+            val cursor = connection.expectedSelectionEnd
+            if (cursor >= 0 && (before.isNotEmpty() || after.isNotEmpty())) {
+                selText = before + after
+                selOrigin = cursor - before.length
+                selAnchor = before.length
+                selFocus = before.length
+            }
+        }
+        val text = selText
+        if (text == null || ic == null) return sendShiftedArrowKey(code)
+        val col = selFocus - (text.lastIndexOf('\n', selFocus - 1) + 1)
+        selFocus = when (code) {
+            KeyCode.ARROW_LEFT -> maxOf(0, selFocus - 1)
+            KeyCode.ARROW_RIGHT -> minOf(text.length, selFocus + 1)
+            KeyCode.ARROW_UP -> {
+                val lineStart = selFocus - col
+                if (lineStart == 0) 0
+                else {
+                    val prevStart = text.lastIndexOf('\n', lineStart - 2) + 1
+                    minOf(prevStart + col, lineStart - 1)
+                }
+            }
+            else -> { // down
+                val nl = text.indexOf('\n', selFocus)
+                if (nl == -1) text.length
+                else {
+                    val next = nl + 1
+                    val nextEnd = text.indexOf('\n', next).let { if (it == -1) text.length else it }
+                    minOf(next + col, nextEnd)
+                }
+            }
+        }
+        ic.setSelection(selOrigin + selAnchor, selOrigin + selFocus)
+        return true
+    }
+
+    /** fallback when the app gives no text: arrow key with a real shift key held */
+    private fun sendShiftedArrowKey(code: Int): Boolean {
+        if (!shiftHeld) {
+            shiftHeld = true
+            sendShiftKey(KeyEvent.ACTION_DOWN)
+        }
         latinIME.onEvent(Event.createSoftwareKeypressEvent(code, metaState or KeyEvent.META_SHIFT_ON,
             Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false))
         return true
@@ -194,6 +256,11 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
             true
         }
         KeyboardActionListener.CustomAction.TOUCHPAD_OFF -> {
+            selText = null
+            if (shiftHeld) {
+                shiftHeld = false
+                sendShiftKey(KeyEvent.ACTION_UP)
+            }
             keyboardSwitcher.mainKeyboardView?.alpha = 1f
             true
         }
@@ -201,6 +268,29 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
         KeyboardActionListener.CustomAction.SELECT_RIGHT -> sendShiftedArrow(KeyCode.ARROW_RIGHT)
         KeyboardActionListener.CustomAction.SELECT_UP -> sendShiftedArrow(KeyCode.ARROW_UP)
         KeyboardActionListener.CustomAction.SELECT_DOWN -> sendShiftedArrow(KeyCode.ARROW_DOWN)
+        KeyboardActionListener.CustomAction.DELETE_LINE_END -> {
+            connection.finishComposingText()
+            val ic = latinIME.currentInputConnection
+            if (ic != null) {
+                // delete back to the start of the line
+                val before = connection.getTextBeforeCursor(2000, 0)?.toString().orEmpty()
+                val count = before.length - (before.lastIndexOf('\n') + 1)
+                if (count > 0) ic.deleteSurroundingText(count, 0)
+            }
+            true
+        }
+        KeyboardActionListener.CustomAction.SHARE_SELECTION -> {
+            val text = connection.getSelectedText(0)?.toString()
+            if (!text.isNullOrEmpty()) {
+                val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(android.content.Intent.EXTRA_TEXT, text)
+                }
+                latinIME.startActivity(android.content.Intent.createChooser(send, null)
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+            true
+        }
         KeyboardActionListener.CustomAction.PERFORM_HAPTIC -> {
             performHapticFeedback(HapticEvent.KEY_LONG_PRESS)
             true

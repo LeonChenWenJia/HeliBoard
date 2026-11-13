@@ -456,8 +456,8 @@ public class KeyboardView extends View {
 
         // Draw hint label.
         String hintLabel = key.getHintLabel();
-        if (hintLabel == null && key.getCode() == KeyCode.DELETE && Settings.getValues().mFlickTyping)
-            hintLabel = "/"; // flick down on delete types "/"
+        if (hintLabel == null && key.getCode() == Constants.CODE_ENTER && Settings.getValues().mFlickTyping)
+            hintLabel = "↑"; // flick down on enter goes to the previous field
         Drawable hintIcon = (keyboard == null || !mShowsHints || hintLabel != null) ? null
                         : key.getHintIcon(keyboard.mIconsSet, params.mAnimAlpha);
         if (hintLabel != null && mShowsHints) {
@@ -532,6 +532,22 @@ public class KeyboardView extends View {
         } else if (key.getPopupKeys() != null && ! key.hasNoPanelAutoPopupKey()
                         && (key.hasActionKeyBackground() || key.getBackgroundType() == Key.BACKGROUND_TYPE_FUNCTIONAL)) {
             drawKeyPopupHint(key, canvas, paint, params);
+        }
+
+        // flick hints on the space key: up selects all, down selects a word (same icons as the toolbar)
+        if (key.getCode() == Constants.CODE_SPACE && mShowsHints && keyboard != null && Settings.getValues().mFlickTyping) {
+            final int hintSize = (int) (key.selectHintTextSize(params) * mHintFontSizeMultiplier);
+            final int hintX = keyWidth - hintSize * 3 / 2;
+            final Drawable upIcon = keyboard.mIconsSet.getIconDrawable("select_all");
+            final Drawable downIcon = keyboard.mIconsSet.getIconDrawable("select_word");
+            if (upIcon != null) {
+                upIcon.setColorFilter(key.selectHintTextColor(params), PorterDuff.Mode.MULTIPLY);
+                drawIcon(canvas, upIcon, hintX, hintSize / 4, hintSize, hintSize);
+            }
+            if (downIcon != null) {
+                downIcon.setColorFilter(key.selectHintTextColor(params), PorterDuff.Mode.MULTIPLY);
+                drawIcon(canvas, downIcon, hintX, keyHeight - hintSize * 5 / 4, hintSize, hintSize);
+            }
         }
 
         // Draw key icon.

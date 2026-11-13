@@ -42,6 +42,7 @@ import helium314.keyboard.latin.dictionary.Dictionary;
 import helium314.keyboard.latin.DictionaryFacilitator;
 import helium314.keyboard.latin.LastComposedWord;
 import helium314.keyboard.latin.LatinIME;
+import helium314.keyboard.latin.StuffReceiver;
 import helium314.keyboard.latin.NgramContext;
 import helium314.keyboard.latin.RichInputConnection;
 import helium314.keyboard.latin.SingleDictionaryFacilitator;
@@ -778,6 +779,7 @@ public final class InputLogic {
                 break;
             case KeyCode.CLIPBOARD_COPY:
                 mConnection.copyText(true);
+                mLatinIME.flashCopyToolbarKey();
                 break;
             case KeyCode.CLIPBOARD_COPY_ALL:
                 mConnection.copyText(false);
@@ -845,6 +847,9 @@ public final class InputLogic {
                 break;
             case KeyCode.TIMESTAMP:
                 mLatinIME.onTextInput(TimestampKt.getTimestamp(mLatinIME));
+                break;
+            case KeyCode.OPEN_FLOATING_KEEP:
+                mLatinIME.startActivity(new android.content.Intent(mLatinIME, helium314.keyboard.latin.BubbleTrampolineActivity.class).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)); // TEMPORARY: was openFloatingApp
                 break;
             case KeyCode.EMOJI_SEARCH:
                 commitTyped(sv, LastComposedWord.NOT_A_SEPARATOR);
@@ -1300,6 +1305,7 @@ public final class InputLogic {
                 setComposingTextInternal(getTextWithUnderline(mWordComposer.getTypedWord()), 1);
             } else {
                 mConnection.commitText("", 1);
+                if (deleteWord) deleteSpacesBeforeCursor();
             }
             updateInlineEmojiSearch();
             inputTransaction.setRequiresUpdateSuggestions();
@@ -1393,10 +1399,12 @@ public final class InputLogic {
                 else mConnection.deleteTextBeforeCursor(1);
                 return;
             }
+            if (deleteWord) deleteSpacesBeforeCursor(); // trailing spaces after the word
             int lengthToDelete = deleteWord
                 ? mConnection.getWordLengthBeforeCursor(sv.mSpacingAndPunctuations)
                 : mConnection.getGraphemeLengthBeforeCursor();
             mConnection.deleteTextBeforeCursor(lengthToDelete);
+            if (deleteWord) deleteSpacesBeforeCursor();
             int totalDeletedLength = lengthToDelete;
             if (mDeleteCount > Constants.DELETE_ACCELERATE_AT) {
                 // If this is an accelerated (i.e., double) deletion, then we need to
@@ -1419,6 +1427,15 @@ public final class InputLogic {
             unlearnWordBeingDeleted(inputTransaction.getSettingsValues());
         }
         restartSuggestionsAfterDelete(inputTransaction);
+    }
+
+    /** after deleting a word, also delete the whitespace that separated it from the previous word */
+    private void deleteSpacesBeforeCursor() {
+        final CharSequence before = mConnection.getTextBeforeCursor(50, 0);
+        if (before == null) return;
+        int n = 0;
+        while (n < before.length() && before.charAt(before.length() - 1 - n) == ' ') n++;
+        if (n > 0) mConnection.deleteTextBeforeCursor(n);
     }
 
     private void restartSuggestionsAfterDelete(InputTransaction inputTransaction) {

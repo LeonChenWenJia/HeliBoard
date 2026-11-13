@@ -166,6 +166,7 @@ class KeyboardIconsSet private constructor() {
                     ToolbarKey.LANGUAGE_SWITCH -> R.drawable.sym_keyboard_language_switch
                     ToolbarKey.HIDE_KEYBOARD -> R.drawable.ic_keyboard_hide
                     ToolbarKey.TIMESTAMP -> R.drawable.ic_clock
+                    ToolbarKey.FLOATING_KEEP -> R.drawable.ic_edit
                     ToolbarKey.BACK -> R.drawable.ic_dpad_left
                     ToolbarKey.CTRL -> R.drawable.ic_key_ctrl
                     ToolbarKey.ALT -> R.drawable.ic_key_alt
@@ -244,6 +245,7 @@ class KeyboardIconsSet private constructor() {
                     ToolbarKey.LANGUAGE_SWITCH -> R.drawable.sym_keyboard_language_switch_lxx
                     ToolbarKey.HIDE_KEYBOARD -> R.drawable.ic_keyboard_hide
                     ToolbarKey.TIMESTAMP -> R.drawable.ic_clock
+                    ToolbarKey.FLOATING_KEEP -> R.drawable.ic_edit
                     ToolbarKey.BACK -> R.drawable.ic_dpad_left
                     ToolbarKey.CTRL -> R.drawable.ic_key_ctrl
                     ToolbarKey.ALT -> R.drawable.ic_key_alt
@@ -322,6 +324,7 @@ class KeyboardIconsSet private constructor() {
                     ToolbarKey.LANGUAGE_SWITCH -> R.drawable.sym_keyboard_language_switch_lxx
                     ToolbarKey.HIDE_KEYBOARD -> R.drawable.ic_keyboard_hide
                     ToolbarKey.TIMESTAMP -> R.drawable.ic_clock
+                    ToolbarKey.FLOATING_KEEP -> R.drawable.ic_edit
                     ToolbarKey.BACK -> R.drawable.ic_dpad_left_rounded
                     ToolbarKey.CTRL -> R.drawable.ic_key_ctrl
                     ToolbarKey.ALT -> R.drawable.ic_key_alt

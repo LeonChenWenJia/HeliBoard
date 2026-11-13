@@ -108,6 +108,7 @@ fun getDefaultCodeForToolbarKey(key: ToolbarKey) = when (key) {
     LANGUAGE_SWITCH -> KeyCode.LANGUAGE_SWITCH
     HIDE_KEYBOARD -> KeyCode.IME_HIDE_UI
     TIMESTAMP -> KeyCode.TIMESTAMP
+    FLOATING_KEEP -> KeyCode.OPEN_FLOATING_KEEP
     BACK -> KeyCode.BACK
     CTRL -> KeyCode.CTRL
     ALT -> KeyCode.ALT
@@ -141,7 +142,7 @@ enum class ToolbarKey {
     INCOGNITO, AUTOCORRECT, CLEAR_CLIPBOARD, CLOSE_HISTORY, EMOJI, LEFT, RIGHT, UP, DOWN, WORD_LEFT, WORD_RIGHT,
     PAGE_UP, PAGE_DOWN, FULL_LEFT, FULL_RIGHT, PAGE_START, PAGE_END, BACKGROUND_GATHERING,
     DELETE_WORD, COPY_ALL, TAB, ESCAPE, SHIFT_ENTER, NEXT_FIELD, LANGUAGE_SWITCH, HIDE_KEYBOARD, TIMESTAMP, BACK,
-    CTRL, ALT, META, FN
+    CTRL, ALT, META, FN, FLOATING_KEEP
 }
 
 enum class ToolbarMode {
@@ -328,6 +329,7 @@ private const val PREF_TOOLBAR_FLICK_CODES = "toolbar_custom_flick_codes"
 val defaultFlickCodes: Map<ToolbarKey, Pair<Int?, Int?>> = mapOf(
     COPY to (KeyCode.CLIPBOARD_CUT to KeyCode.CLIPBOARD_PASTE),
     CLIPBOARD to (KeyCode.REDO to KeyCode.UNDO),
+    VOICE to (null to KeyCode.OPEN_FLOATING_KEEP),
 )
 
 /** flick up / flick down codes per toolbar key, stored as "KEY,up,down;KEY,up,down" */

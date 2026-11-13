@@ -37,6 +37,35 @@ public class TouchpadHandler {
     private int mCurrentScrollDirection = 0;
 
     private static boolean sSelectMode = false;
+    private static boolean sShareMode = false; // select mode started from the enter key: release shares the selection
+    private static boolean sDeleteMode = false; // select mode started from the delete key: release deletes (done by PointerTracker)
+
+    public boolean isActive() {
+        return mInTouchpadMode;
+    }
+
+    /** Select mode driven from the delete key, without the initial debounce. */
+    public void enableDeleteSelect(int x, int y, KeyboardActionListener listener) {
+        enableSelectFromKey(x, y, listener, false);
+    }
+
+    /** Select mode driven from the enter key, release shares the selection. */
+    public void enableShareSelect(int x, int y, KeyboardActionListener listener) {
+        enableSelectFromKey(x, y, listener, true);
+    }
+
+    private void enableSelectFromKey(int x, int y, KeyboardActionListener listener, boolean share) {
+        if (!mInTouchpadMode) {
+            sTouchpadModeActive = true;
+            sSelectMode = true;
+            sDeleteMode = !share;
+            sShareMode = share;
+            enableTouchpadMove(x, y, listener);
+            mTouchpadActivationTime = SystemClock.elapsedRealtime() - Settings.getValues().mKeyLongpressTimeout;
+            return;
+        }
+        enableTouchpadMove(x, y, listener);
+    }
 
     public static void setTouchpadModeActive(boolean active) {
         setTouchpadModeActive(active, false);
@@ -48,14 +77,33 @@ public class TouchpadHandler {
         sSelectMode = active && select;
     }
 
+    /** True while touchpad mode has started but the initial debounce has not passed, so it did not move anything yet. */
+    public boolean isInDebounce() {
+        return mInTouchpadMode && SystemClock.elapsedRealtime() - mTouchpadActivationTime < Settings.getValues().mKeyLongpressTimeout;
+    }
+
     public void disableTouchpadMode() {
+        disableTouchpadMode(false);
+    }
+
+    /** @param quiet skip the release action (copy / share), used when the short touchpad start turned out to be a flick */
+    public void disableTouchpadMode(boolean quiet) {
         if (!mInTouchpadMode) return;
+        if (quiet) {
+            sShareMode = false;
+            sSelectMode = false;
+        }
         stopEdgeScrolling();
         stopVerticalSelect();
         stopHapticRunnable();
         mInTouchpadMode = false;
         sTouchpadModeActive = false;
+        // select mode: copy the selection on release
+        if (sShareMode) mListener.onCustomRequest(KeyboardActionListener.CustomAction.SHARE_SELECTION);
+        else if (sSelectMode && !sDeleteMode) mListener.onCodeInput(KeyCode.CLIPBOARD_COPY, Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false);
         sSelectMode = false;
+        sDeleteMode = false;
+        sShareMode = false;
         mListener.onCustomRequest(KeyboardActionListener.CustomAction.TOUCHPAD_OFF);
         mListener = null;
     }

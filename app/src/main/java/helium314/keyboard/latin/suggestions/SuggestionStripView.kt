@@ -9,7 +9,12 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
+import android.animation.ValueAnimator
+import androidx.core.animation.doOnCancel
+import androidx.core.animation.doOnEnd
 import android.graphics.Color
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
@@ -556,6 +561,25 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
         copy.isActivated = original.isActivated
         setupKey(copy, Settings.getValues().mColors)
         pinnedKeys.addView(copy)
+    }
+
+    /** briefly tints the icon of the toolbar [key] with the accent color, fading in and out */
+    fun flashToolbarKey(key: ToolbarKey) {
+        val colors = Settings.getValues().mColors
+        val base = colors.get(ColorType.TOOL_BAR_KEY)
+        val accent = Color.parseColor("#4CAF50")
+        for (parent in listOf(toolbar, pinnedKeys)) {
+            val button = parent.findViewWithTag<ImageButton>(key) ?: continue
+            val drawable = button.drawable ?: continue
+            (button.getTag(R.id.toolbar) as? ValueAnimator)?.cancel()
+            val animator = ValueAnimator.ofArgb(base, accent, accent, base)
+            animator.duration = 700
+            animator.addUpdateListener { drawable.colorFilter = PorterDuffColorFilter(it.animatedValue as Int, PorterDuff.Mode.SRC_IN) }
+            animator.doOnEnd { colors.setColor(drawable, ColorType.TOOL_BAR_KEY) }
+            animator.doOnCancel { colors.setColor(drawable, ColorType.TOOL_BAR_KEY) }
+            button.setTag(R.id.toolbar, animator)
+            animator.start()
+        }
     }
 
     private fun setupKey(view: ImageButton, colors: Colors) {

@@ -149,6 +149,7 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
     private int mStartY;
     private long mStartTime;
     private boolean mInHorizontalSwipe = false;
+    private boolean mInEnterSelect = false; // enter key dragged to the center: select mode, share on release
     private boolean mInVerticalSwipe = false;
 
     // true if keyboard layout has been changed.
@@ -719,6 +720,7 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
     }
 
     private void onDownEventInternal(final int x, final int y, final long eventTime) {
+        mInEnterSelect = false;
         Key key = onDownKey(x, y, eventTime);
         // Key selection by dragging finger is allowed when 1) key selection by dragging finger is
         // enabled by configuration, 2) this pointer starts dragging from modifier key, or 3) this
@@ -785,6 +787,7 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
             case Constants.CODE_SPACE -> sv.mSpaceSwipeHorizontal != KeyboardActionListener.SwipeAction.NONE
                     || sv.mSpaceSwipeVertical != KeyboardActionListener.SwipeAction.NONE;
             case KeyCode.DELETE -> sv.mDeleteSwipe > 0;
+            case Constants.CODE_ENTER -> true; // drag to the keyboard center starts select + share
             default -> false;
         };
     }
@@ -851,7 +854,12 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
             }
             return;
         }
-        if (mFlickKey != null && !sInGesture && tryImmediateFlick(x, y, eventTime)) {
+        if (mCurrentKey != null && mCurrentKey.getCode() == KeyCode.DELETE || (mFlickKey != null && mFlickKey.getCode() == KeyCode.DELETE))
+        if (mFlickKey != null && !sInGesture
+                && !(mCurrentKey != null && mCurrentKey.getCode() == KeyCode.DELETE && mKeySwipeAllowed && mTouchpadHandler.isActive())
+                && mFlickKey.getCode() != Constants.CODE_ENTER // enter flicks wait for release, a diagonal drag may still reach the center
+                && mFlickKey.getCode() != Constants.CODE_SPACE // space flicks wait for release, a long swipe up still starts the touchpad
+                && tryImmediateFlick(x, y, eventTime)) {
             return;
         }
         onMoveEventInternal(x, y, eventTime);
@@ -998,17 +1006,32 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
                 }
             }
         } else if (code == KeyCode.DELETE) {
-            // Delete slider
-            int steps = (x - mStartX) / (sPointerStep * sv.mDeleteSwipe); // half speed for word delete
-            if (steps != 0) {
-                if (!mInHorizontalSwipe) {
-                    sTimerProxy.cancelKeyTimersOf(this);
-                    mInHorizontalSwipe = true;
-                }
-                mStartX += steps * sPointerStep;
-                sListener.onMoveDeletePointer(steps);
+            // Selection mode is started by long press (onLongPressed), moves then extend it
+            if (!mTouchpadHandler.isActive())
+                return;
+            if (!mInHorizontalSwipe) {
+                sTimerProxy.cancelKeyTimersOf(this);
+                mInHorizontalSwipe = true;
             }
+            mTouchpadHandler.enableDeleteSelect(x, y, sListener);
+        } else if (code == Constants.CODE_ENTER) {
+            // Select mode starts when the finger reaches the keyboard center, and stays on until release
+            if (!mInEnterSelect) {
+                if (!isInKeyboardCenter(x, y))
+                    return;
+                mInEnterSelect = true;
+                mFlickKey = null; // the drag is not a flick
+                sTimerProxy.cancelKeyTimersOf(this);
+                TouchpadHandler.setTouchpadModeActive(true, true);
+            }
+            mTouchpadHandler.enableShareSelect(x, y, sListener);
         }
+    }
+
+    private boolean isInKeyboardCenter(final int x, final int y) {
+        if (mKeyboard == null) return false;
+        return abs(y - mKeyboard.mBaseHeight / 2f) <= mKeyboard.mBaseHeight * 0.15f
+                && abs(x - mKeyboard.mBaseWidth / 2f) <= mKeyboard.mBaseWidth * 0.2f;
     }
 
     private void onMoveEventInternal(final int x, final int y, final long eventTime) {
@@ -1122,13 +1145,30 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
             mKeySwipeAllowed = false;
             sInKeySwipe = false;
 
-            // Touchpad mode
-            mTouchpadHandler.disableTouchpadMode();
+            // Touchpad mode (for enter this shares the selection)
+            final boolean spaceQuickRelease = mFlickKey != null && mFlickKey.getCode() == Constants.CODE_SPACE
+                    && mTouchpadHandler.isInDebounce(); // touchpad started but nothing moved yet: a flick
+            final boolean wasInTouchpad = mTouchpadHandler.isActive() && !spaceQuickRelease;
+            mTouchpadHandler.disableTouchpadMode(spaceQuickRelease);
+
+            if (mInEnterSelect) {
+                mInEnterSelect = false; // released without enter, whether or not anything was selected
+                return;
+            }
 
             if (mInHorizontalSwipe || mInVerticalSwipe) {
+                // a short vertical swipe on space that never reached touchpad mode is a flick
+                final boolean spaceFlick = mInVerticalSwipe && !mInHorizontalSwipe && !wasInTouchpad && !sInGesture
+                        && mFlickKey != null && mFlickKey.getCode() == Constants.CODE_SPACE;
                 mInHorizontalSwipe = false;
                 mInVerticalSwipe = false;
                 sListener.onEndSpaceSwipe();
+                if (spaceFlick) {
+                    final Key flickKey = mFlickKey;
+                    mFlickKey = null;
+                    final int index = getFlickIndex(flickKey, x, y);
+                    if (index != FLICK_NONE) commitFlick(flickKey, index, eventTime);
+                }
                 return;
             }
         }
@@ -1165,7 +1205,12 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
     }
 
     private static final int FLICK_NONE = -1;
-    private static final int FLICK_DELETE_SLASH = -3; // delete key flicked down -> type "/"
+    private static final int FLICK_DELETE_WORD = -3; // delete key flicked down
+    private static final int FLICK_DELETE_LINE_END = -4; // delete key flicked up
+    private static final int FLICK_ACTION_NEXT = -5; // enter key flicked up
+    private static final int FLICK_ACTION_PREVIOUS = -6; // enter key flicked down
+    private static final int FLICK_SELECT_WORD = -7; // space key flicked down
+    private static final int FLICK_SELECT_ALL = -8; // space key flicked up
     private static final int FLICK_BASE_KEY = -2; // flicked in a direction without popup key -> type the first key
 
     /**
@@ -1178,10 +1223,12 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
         final int dX = x - mFlickDownX;
         final int dY = y - mFlickDownY;
         final boolean isDelete = flickKey.getCode() == KeyCode.DELETE;
-        // delete: only vertical flicks, horizontal moves stay the delete slider
-        if (isDelete && abs(dX) > abs(dY))
+        final boolean isEnter = flickKey.getCode() == Constants.CODE_ENTER;
+        final boolean isSpace = flickKey.getCode() == Constants.CODE_SPACE;
+        // delete, enter and space: only vertical flicks, horizontal moves stay the delete slider / enter drag / space swipe
+        if ((isDelete || isEnter || isSpace) && abs(dX) > abs(dY))
             return FLICK_NONE;
-        if (!isDelete && isSwiper(flickKey.getCode()))
+        if (!isDelete && !isEnter && !isSpace && isSwiper(flickKey.getCode()))
             return FLICK_NONE;
         final int threshold = (int) (Settings.getValues().mFlickThreshold
                 * Math.min(mKeyboard.mMostCommonKeyWidth, mKeyboard.mMostCommonKeyHeight));
@@ -1190,8 +1237,12 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
             return FLICK_NONE;
         // popup key order -> down, left, right, up
         final int index = abs(dX) > abs(dY) ? (dX < 0 ? 1 : 2) : (dY < 0 ? 3 : 0);
-        if (isDelete) // flick down types "/" (first popup key), flick up deletes
-            return index == 0 ? FLICK_DELETE_SLASH : FLICK_BASE_KEY;
+        if (isDelete) // flick down deletes a word, flick up deletes to the end of the line
+            return index == 0 ? FLICK_DELETE_WORD : FLICK_DELETE_LINE_END;
+        if (isSpace) // flick down selects a word, flick up selects all
+            return index == 0 ? FLICK_SELECT_WORD : FLICK_SELECT_ALL;
+        if (isEnter) // flick up goes to the next field, flick down to the previous one
+            return index == 0 ? FLICK_ACTION_PREVIOUS : FLICK_ACTION_NEXT;
         final PopupKeySpec[] popupKeys = flickKey.getPopupKeys();
         return popupKeys != null && index < popupKeys.length ? index : FLICK_BASE_KEY;
     }
@@ -1201,9 +1252,18 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
             callListenerOnCodeInput(flickKey, flickKey.getCode(), mFlickDownX, mFlickDownY, eventTime, false);
             return;
         }
-        if (index == FLICK_DELETE_SLASH) {
-            sTypingTimeRecorder.onCodeInput('/', eventTime);
-            sListener.onCodeInput('/', Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false);
+        if (index == FLICK_DELETE_WORD || index == FLICK_ACTION_NEXT || index == FLICK_ACTION_PREVIOUS
+                || index == FLICK_SELECT_WORD || index == FLICK_SELECT_ALL) {
+            final int code = index == FLICK_DELETE_WORD ? KeyCode.DELETE_WORD
+                    : index == FLICK_ACTION_NEXT ? KeyCode.ACTION_NEXT
+                    : index == FLICK_SELECT_WORD ? KeyCode.CLIPBOARD_SELECT_WORD
+                    : index == FLICK_SELECT_ALL ? KeyCode.CLIPBOARD_SELECT_ALL : KeyCode.ACTION_PREVIOUS;
+            sTypingTimeRecorder.onCodeInput(code, eventTime);
+            sListener.onCodeInput(code, Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false);
+            return;
+        }
+        if (index == FLICK_DELETE_LINE_END) {
+            sListener.onCustomRequest(KeyboardActionListener.CustomAction.DELETE_LINE_END);
             return;
         }
         final PopupKeySpec spec = flickKey.getPopupKeys()[index];
@@ -1273,6 +1333,12 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
             return;
         }
         final int code = key.getCode();
+        if (code == KeyCode.DELETE) {
+            // Long press starts delete selection mode, release deletes the selection
+            mInHorizontalSwipe = true;
+            mTouchpadHandler.enableDeleteSelect(mLastX, mLastY, sListener);
+            return;
+        }
         sListener.onLongPressKey(code);
         if (key.hasNoPanelAutoPopupKey()) {
             cancelKeyTracking();
@@ -1377,6 +1443,12 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
         sTimerProxy.cancelLongPressAlphaSymbolKeyTimer();
         if (sInGesture) return;
         if (key == null) return;
+        if (key.getCode() == Constants.CODE_ENTER) return; // no popup, drag to center and flicks instead
+        if (key.getCode() == KeyCode.DELETE) {
+            if (Settings.getValues().mDeleteSwipe > 0)
+                sTimerProxy.startLongPressTimerOf(this, Settings.getValues().mKeyLongpressTimeout);
+            return;
+        }
         if (!Settings.getValues().mKeyLongpressEnabled && key.getCode() != KeyCode.SHIFT) return; // shift lock stays available
         if (!key.isLongPressEnabled()) return;
         // Caveat: Please note that isLongPressEnabled() can be true even if the current key
@@ -1439,6 +1511,8 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
         if (sInGesture) return;
         if (key == null) return;
         if (!key.isRepeatable()) return;
+        // delete long press starts selection mode instead
+        if (key.getCode() == KeyCode.DELETE && Settings.getValues().mDeleteSwipe > 0) return;
         // Don't start key repeat when we are in the dragging finger mode.
         if (mIsInDraggingFinger) return;
         final int startRepeatCount = 1;

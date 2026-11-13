@@ -1044,6 +1044,10 @@ public class LatinIME extends InputMethodService implements
         Log.i(TAG, "requestHideSelf: " + flags);
     }
 
+    public void flashCopyToolbarKey() {
+        if (hasSuggestionStripView()) mSuggestionStripView.flashToolbarKey(helium314.keyboard.latin.utils.ToolbarKey.COPY);
+    }
+
     @Override
     public void onSwipeDownOnToolbar() {
         requestHideSelf(0);
@@ -1250,6 +1254,11 @@ public class LatinIME extends InputMethodService implements
                 mInputLogic.onCodeInput(mSettings.getCurrent(), event, mKeyboardSwitcher.getKeyboardCapsMode(), mHandler);
         updateStateAfterInputTransaction(completeInputTransaction);
         mKeyboardSwitcher.onEvent(event, getCurrentAutoCapsState(), getCurrentRecapitalizeState());
+    }
+
+    // called by StuffReceiver when an outside app sends the voice input broadcast
+    public void startVoiceInput() {
+        mRichImm.switchToShortcutIme(this);
     }
 
     public void onTextInput(@Nullable String rawText) {
