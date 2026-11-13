@@ -94,7 +94,6 @@ public class TouchpadHandler {
             sSelectMode = false;
         }
         stopEdgeScrolling();
-        stopVerticalSelect();
         stopHapticRunnable();
         mInTouchpadMode = false;
         sTouchpadModeActive = false;
@@ -138,9 +137,6 @@ public class TouchpadHandler {
             return;
         }
 
-        // select mode: vertical position relative to the keyboard middle moves the selection by lines
-        if (sSelectMode) updateVerticalSelect(y);
-
         // Edge Scrolling
         if (sv.mTouchpadEdgeScroll && handleEdgeScrolling(x, y)) {
             return;
@@ -153,21 +149,24 @@ public class TouchpadHandler {
         mTouchpadLastX = x;
         mTouchpadLastY = y;
 
-        if (sSelectMode && Math.abs(deltaX) <= Math.abs(deltaY)) {
-            // select mode: ignore vertical movement
+        if (sSelectMode) {
+            // select mode: like the space cursor swipe, plain distance based steps, vertical jitter does not reset progress
+            mTouchpadAccX += deltaX;
+            mTouchpadAccY += deltaY;
+            final android.content.res.Resources res = android.content.res.Resources.getSystem();
+            final int step = helium314.keyboard.latin.utils.KtxKt.dpToPx(10, res);
+            final int lineStep = helium314.keyboard.latin.utils.KtxKt.dpToPx(20, res);
+            while (Math.abs(mTouchpadAccY) >= lineStep) {
+                final boolean down = mTouchpadAccY > 0;
+                sendMove(down ? KeyCode.ARROW_DOWN : KeyCode.ARROW_UP);
+                mTouchpadAccY -= down ? lineStep : -lineStep;
+            }
+            while (Math.abs(mTouchpadAccX) >= step) {
+                final boolean positive = mTouchpadAccX > 0;
+                sendMove(positive ? KeyCode.ARROW_RIGHT : KeyCode.ARROW_LEFT);
+                mTouchpadAccX -= positive ? step : -step;
+            }
             return;
-        }
-
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            // Horizontal move, X only
-            float accFactorX = 1.0f + (Math.abs(deltaX) / TOUCHPAD_ACCELERATION_FACTOR);
-            mTouchpadAccX += (int) (deltaX * accFactorX);
-            mTouchpadAccY = 0;
-        } else {
-            // Vertical move, Y only
-            float accFactorY = 1.0f + (Math.abs(deltaY) / TOUCHPAD_ACCELERATION_FACTOR);
-            mTouchpadAccY += (int) (deltaY * accFactorY);
-            mTouchpadAccX = 0;
         }
 
         // Calculate dynamic threshold based on sensitivity setting (0-100)
@@ -264,46 +263,6 @@ public class TouchpadHandler {
             return false;
         }
     }
-
-    private static final float SELECT_NEUTRAL_ZONE = 0.15f; // fraction of keyboard height around the middle
-    private boolean mVerticalSelecting = false;
-    private float mVerticalFraction = 0f; // 0 at the edge of the neutral zone, 1 at the keyboard edge
-    private int mVerticalDirection = 0;
-
-    private void updateVerticalSelect(int y) {
-        Keyboard kb = KeyboardSwitcher.getInstance().getKeyboard();
-        if (kb == null) return;
-        float half = kb.mBaseHeight / 2f;
-        float offset = y - half;
-        float dead = kb.mBaseHeight * SELECT_NEUTRAL_ZONE;
-        if (Math.abs(offset) <= dead) {
-            stopVerticalSelect();
-            return;
-        }
-        mVerticalDirection = offset < 0 ? DIRECTION_UP : DIRECTION_DOWN;
-        mVerticalFraction = Math.min(1f, (Math.abs(offset) - dead) / Math.max(1f, half - dead));
-        if (!mVerticalSelecting) {
-            mVerticalSelecting = true;
-            mHandler.removeCallbacks(mVerticalRunnable);
-            mHandler.post(mVerticalRunnable);
-        }
-    }
-
-    private void stopVerticalSelect() {
-        mVerticalSelecting = false;
-        mHandler.removeCallbacks(mVerticalRunnable);
-    }
-
-    private final Runnable mVerticalRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (!mVerticalSelecting || mListener == null) return;
-            sendMove(getKeyCodeForDirection(mVerticalDirection));
-            // further from the middle = faster
-            long delay = (long) (getBaseScrollDelay() * (1f - 0.7f * mVerticalFraction));
-            mHandler.postDelayed(this, Math.max(60, delay));
-        }
-    };
 
     private void startEdgeScrolling() {
         if (!mIsScrolling) {

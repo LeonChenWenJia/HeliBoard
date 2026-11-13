@@ -456,8 +456,6 @@ public class KeyboardView extends View {
 
         // Draw hint label.
         String hintLabel = key.getHintLabel();
-        if (hintLabel == null && key.getCode() == Constants.CODE_ENTER && Settings.getValues().mFlickTyping)
-            hintLabel = "↑"; // flick down on enter goes to the previous field
         Drawable hintIcon = (keyboard == null || !mShowsHints || hintLabel != null) ? null
                         : key.getHintIcon(keyboard.mIconsSet, params.mAnimAlpha);
         if (hintLabel != null && mShowsHints) {
@@ -548,6 +546,20 @@ public class KeyboardView extends View {
                 downIcon.setColorFilter(key.selectHintTextColor(params), PorterDuff.Mode.MULTIPLY);
                 drawIcon(canvas, downIcon, hintX, keyHeight - hintSize * 5 / 4, hintSize, hintSize);
             }
+        }
+
+        // flick hints on the enter key: up = previous field (top right), down = next field (bottom right)
+        if (key.getCode() == Constants.CODE_ENTER && mShowsHints && Settings.getValues().mFlickTyping) {
+            paint.setTextSize(key.selectHintTextSize(params) * mHintFontSizeMultiplier);
+            paint.setColor(key.selectHintTextColor(params));
+            paint.setTypeface(Typeface.DEFAULT_BOLD);
+            paint.setTextAlign(Align.CENTER);
+            blendAlpha(paint, params.mAnimAlpha);
+            final float charH = TypefaceUtils.getReferenceCharHeight(paint);
+            final float charW = TypefaceUtils.getReferenceCharWidth(paint);
+            final float x = keyWidth - charW * 1.25f;
+            canvas.drawText("↑", x, charH * 1.5f, paint);
+            canvas.drawText("↓", x, keyHeight - charH * 0.5f, paint);
         }
 
         // Draw key icon.

@@ -173,7 +173,7 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
     private fun sendShiftedArrow(code: Int): Boolean {
         val ic = latinIME.currentInputConnection
         if (selText == null && ic != null) {
-            connection.finishComposingText()
+            inputLogic.finishInput()
             val before = ic.getTextBeforeCursor(2000, 0)?.toString().orEmpty()
             val after = ic.getTextAfterCursor(2000, 0)?.toString().orEmpty()
             val cursor = connection.expectedSelectionEnd
@@ -208,7 +208,9 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
                 }
             }
         }
-        ic.setSelection(selOrigin + selAnchor, selOrigin + selFocus)
+        // same as cursor swipe: tell the input logic a cursor move is expected, and keep the cached selection in sync
+        inputLogic.setExpectCursorMove()
+        connection.setSelection(selOrigin + selAnchor, selOrigin + selFocus)
         return true
     }
 

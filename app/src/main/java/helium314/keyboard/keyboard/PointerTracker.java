@@ -1241,8 +1241,8 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
             return index == 0 ? FLICK_DELETE_WORD : FLICK_DELETE_LINE_END;
         if (isSpace) // flick down selects a word, flick up selects all
             return index == 0 ? FLICK_SELECT_WORD : FLICK_SELECT_ALL;
-        if (isEnter) // flick up goes to the next field, flick down to the previous one
-            return index == 0 ? FLICK_ACTION_PREVIOUS : FLICK_ACTION_NEXT;
+        if (isEnter) // flick down goes to the next field, flick up to the previous one
+            return index == 0 ? FLICK_ACTION_NEXT : FLICK_ACTION_PREVIOUS;
         final PopupKeySpec[] popupKeys = flickKey.getPopupKeys();
         return popupKeys != null && index < popupKeys.length ? index : FLICK_BASE_KEY;
     }
